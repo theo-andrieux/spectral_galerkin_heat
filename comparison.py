@@ -8,6 +8,7 @@ directories and compares them.
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import argparse
 
 
 def load_temperature_profiles(out_dir=".out", validation_dir=".validation"):
@@ -141,12 +142,89 @@ def compute_metrics(profiles):
     return metrics
 
 
+def apply_transforms(profiles, align_target='none', invert_target='none', invert_axes=()):
+    """Apply coordinate transforms to profiles in-place.
+
+    Args:
+        profiles: dict of loaded profiles
+        align_target: which dataset to translate so its zero matches the other's zero.
+                      Options: 'none', 'FE', 'spectral', 'both'. If 'FE', the FE profile
+                      is translated so its minimum coordinate equals the spectral minimum.
+        invert_target: 'none', 'FE', 'spectral', or 'both' — which dataset(s) to invert sign for
+        invert_axes: iterable of axis names to invert, e.g. ('x','y')
+    """
+    def sort_pair(coords, vals):
+        if len(coords) == 0:
+            return coords, vals
+        order = np.argsort(coords)
+        return coords[order], vals[order]
+
+    for direction in ['x', 'y', 'z']:
+        spec_key = f'{direction}_spectral'
+        fe_key = f'{direction}_FE'
+
+        coords_spec, T_spec = profiles[spec_key]
+        coords_FE, T_FE = profiles[fe_key]
+
+        # Apply inversion if requested (flip sign). We then sort so coords are ascending.
+        if direction in invert_axes and invert_target in ('spectral', 'both'):
+            coords_spec = -coords_spec
+        if direction in invert_axes and invert_target in ('FE', 'both'):
+            coords_FE = -coords_FE
+
+        coords_spec, T_spec = sort_pair(coords_spec, T_spec)
+        coords_FE, T_FE = sort_pair(coords_FE, T_FE)
+
+        # Align starts by translating only the requested target so its minimum equals the other's
+        if align_target != 'none' and len(coords_spec) > 0 and len(coords_FE) > 0:
+            if align_target == 'FE':
+                # shift FE so its min matches spectral min
+                coords_FE = coords_FE - coords_FE.min() + coords_spec.min()
+            elif align_target == 'spectral':
+                # shift spectral so its min matches FE min
+                coords_spec = coords_spec - coords_spec.min() + coords_FE.min()
+            elif align_target == 'both':
+                # fall back to previous behavior: translate both so global min is zero
+                start = min(coords_spec.min(), coords_FE.min())
+                coords_spec = coords_spec - start
+                coords_FE = coords_FE - start
+
+        profiles[spec_key] = (coords_spec, T_spec)
+        profiles[fe_key] = (coords_FE, T_FE)
+
+    return profiles
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Compare spectral and FE temperature profiles.")
+    parser.add_argument('--out-dir', default='.out', help='Directory with spectral outputs')
+    parser.add_argument('--validation-dir', default='.validation', help='Directory with FE outputs')
+    parser.add_argument('--output-figure', default='temperature_comparison.png', help='Output figure file')
+    parser.add_argument('--align-start', action='store_true', help='Translate one or both profiles so their starts align')
+    parser.add_argument('--align-target', choices=['none', 'FE', 'spectral', 'both'], default='FE',
+                        help='Which dataset to translate when --align-start is given (default: FE)')
+    parser.add_argument('--invert-target', choices=['none', 'FE', 'spectral', 'both'], default='none',
+                        help="Which dataset to invert sign for to match axis direction")
+    parser.add_argument('--invert-axes', default='',
+                        help='Comma-separated list of axes to invert (e.g. "x,y"). Empty = none')
+
+    args = parser.parse_args()
+
     print("Loading temperature profiles...")
-    profiles = load_temperature_profiles()
-    
+    profiles = load_temperature_profiles(out_dir=args.out_dir, validation_dir=args.validation_dir)
+
+    # Parse invert axes
+    invert_axes = tuple([s.strip().lower() for s in args.invert_axes.split(',') if s.strip()])
+
+    # Decide alignment target: if --align-start was passed, use args.align_target, otherwise 'none'
+    align_target = args.align_target if args.align_start else 'none'
+
+    # Apply requested transforms (inversion + alignment)
+    profiles = apply_transforms(profiles, align_target=align_target,
+                                invert_target=args.invert_target, invert_axes=invert_axes)
+
     print("\nComputing comparison metrics...")
     metrics = compute_metrics(profiles)
-    
+
     print("\nGenerating comparison plots...")
-    plot_comparison(profiles)
+    plot_comparison(profiles, output_file=args.output_figure)
