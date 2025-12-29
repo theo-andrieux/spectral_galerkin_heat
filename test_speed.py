@@ -325,8 +325,20 @@ def time_step(a, phys, num, geom, laser, timers=None, epsilon=2e+1, iter_step=0)
         # Debug output
         t0 = time.perf_counter()
         if iter_step % 200 == 0:
-            hp.T_to_HDF5(f"{OUT_DIR}/T_box_step_{laser.t:.5f}", T_box_target.transpose(2, 1, 0), (geom.box_x, geom.box_y, geom.box_z), geom=geom)
-            hp.T_to_HDF5(f"{OUT_DIR}/T_corr_step_{laser.t:.5f}", T_corr_final.transpose(2, 1, 0), (geom.box_x, geom.box_y, geom.box_z), geom=geom)
+            hp.save_field_to_hdf5(
+                f"{OUT_DIR}/T_box_step_{laser.t:.5f}",
+                T_box_target.transpose(2, 1, 0),
+                (geom.box_x, geom.box_y, geom.box_z),
+                value_name="Temperature",
+                geom=geom,
+            )
+            hp.save_field_to_hdf5(
+                f"{OUT_DIR}/T_corr_step_{laser.t:.5f}",
+                T_corr_final.transpose(2, 1, 0),
+                (geom.box_x, geom.box_y, geom.box_z),
+                value_name="DeltaT",
+                geom=geom,
+            )
         if timers is not None: timers['io'] += time.perf_counter() - t0
         
         return num.a_temp, T_temp, P_laser, k+1, n_iter_LH
@@ -378,9 +390,12 @@ def run_simulation(phys, num, geom, laser):
     for step in range(nsteps+1):
         t_step_start = time.perf_counter()
         a, T_top, P_laser, n_evap, n_LH = time_step(a, phys, num, geom, laser, timers=timers, iter_step=step)
+        
+        
+
         laser.update(num.dt)
         timers['total'] += time.perf_counter() - t_step_start
-        print(f"Step {step}/{nsteps} | t={step*num.dt:.6e}s | Peak T: {np.max(T_top):.2f} K | P: {P_laser:.3f} W | Evap: {n_evap} | LH: {n_LH}")
+        print(f"Step {step}/{nsteps} | t={step*num.dt:.6e}s | T_laser: {T_top[int(laser.y / geom.dy), int(laser.x / geom.dx)]:.2f} K | P: {P_laser:.3f} W | Evap: {n_evap} | LH: {n_LH}")
         T_top_hist.append(T_top)
         P_laser_hist.append(P_laser)
 

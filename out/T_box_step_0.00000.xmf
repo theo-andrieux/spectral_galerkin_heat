@@ -2,24 +2,24 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="2.0">
  <Domain>
-   <Grid Name="Mesh" GridType="Uniform">
-     <Topology TopologyType="3DRectMesh" Dimensions="120 39 93"/>
-     <Geometry GeometryType="VXVYVZ">
-       <DataItem Dimensions="93" NumberType="Float" Precision="4" Format="HDF">
-        T_box_step_0.00000.h5:/X
-       </DataItem>
-       <DataItem Dimensions="39" NumberType="Float" Precision="4" Format="HDF">
-        T_box_step_0.00000.h5:/Y
-       </DataItem>
-       <DataItem Dimensions="120" NumberType="Float" Precision="4" Format="HDF">
-        T_box_step_0.00000.h5:/Z
-       </DataItem>
-     </Geometry>
-     <Attribute Name="Temperature" AttributeType="Scalar" Center="Node">
-       <DataItem Dimensions="120 39 93" NumberType="Float" Precision="4" Format="HDF">
-        T_box_step_0.00000.h5:/Temperature
-       </DataItem>
-     </Attribute>
-   </Grid>
+     <Grid Name="Mesh" GridType="Uniform">
+         <Topology TopologyType="3DRectMesh" Dimensions="160 103 400"/>
+         <Geometry GeometryType="VXVYVZ">
+             <DataItem Dimensions="400" NumberType="Float" Precision="4" Format="HDF">
+                T_box_step_0.00000.h5:/X
+             </DataItem>
+             <DataItem Dimensions="103" NumberType="Float" Precision="4" Format="HDF">
+                T_box_step_0.00000.h5:/Y
+             </DataItem>
+             <DataItem Dimensions="160" NumberType="Float" Precision="4" Format="HDF">
+                T_box_step_0.00000.h5:/Z
+             </DataItem>
+         </Geometry>
+         <Attribute Name="Temperature" AttributeType="Scalar" Center="Node">
+             <DataItem Dimensions="160 103 400" NumberType="Float" Precision="4" Format="HDF">
+                T_box_step_0.00000.h5:/Temperature
+             </DataItem>
+         </Attribute>
+     </Grid>
  </Domain>
 </Xdmf>
