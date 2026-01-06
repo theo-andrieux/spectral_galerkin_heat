@@ -3,20 +3,20 @@
 <Xdmf Version="2.0">
  <Domain>
      <Grid Name="Mesh" GridType="Uniform">
-         <Topology TopologyType="3DRectMesh" Dimensions="160 103 400"/>
+         <Topology TopologyType="3DRectMesh" Dimensions="421 90 359"/>
          <Geometry GeometryType="VXVYVZ">
-             <DataItem Dimensions="400" NumberType="Float" Precision="4" Format="HDF">
+             <DataItem Dimensions="359" NumberType="Float" Precision="4" Format="HDF">
                 T_box_step_0.00000.h5:/X
              </DataItem>
-             <DataItem Dimensions="103" NumberType="Float" Precision="4" Format="HDF">
+             <DataItem Dimensions="90" NumberType="Float" Precision="4" Format="HDF">
                 T_box_step_0.00000.h5:/Y
              </DataItem>
-             <DataItem Dimensions="160" NumberType="Float" Precision="4" Format="HDF">
+             <DataItem Dimensions="421" NumberType="Float" Precision="4" Format="HDF">
                 T_box_step_0.00000.h5:/Z
              </DataItem>
          </Geometry>
          <Attribute Name="Temperature" AttributeType="Scalar" Center="Node">
-             <DataItem Dimensions="160 103 400" NumberType="Float" Precision="4" Format="HDF">
+             <DataItem Dimensions="421 90 359" NumberType="Float" Precision="4" Format="HDF">
                 T_box_step_0.00000.h5:/Temperature
              </DataItem>
          </Attribute>
