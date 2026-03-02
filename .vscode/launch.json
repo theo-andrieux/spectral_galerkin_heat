@@ -9,7 +9,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["config/standard_test.yaml"]
+            "args": ["config/gpu_standard_test.yaml"]
         }
     ]
 }
