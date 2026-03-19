@@ -13,6 +13,13 @@ Requires-Dist: pyyaml>=6.0.3
 Requires-Dist: scipy>=1.17.1
 Provides-Extra: gpu
 Requires-Dist: cupy-cuda12x>=14.0.1; extra == "gpu"
+Provides-Extra: viz
+Requires-Dist: matplotlib>=3.10.8; extra == "viz"
+Provides-Extra: dev
+Requires-Dist: black>=26.3.1; extra == "dev"
+Requires-Dist: isort>=8.0.1; extra == "dev"
+Requires-Dist: pre-commit>=4.5.1; extra == "dev"
+Requires-Dist: pytest>=9.0.2; extra == "dev"
 
 # fastHeatSolv
 
@@ -129,20 +136,23 @@ Install everything (GPU + Visualization + Dev tools):
 uv sync --all-extras
 ```
 
-If you prefer to install the package itself in editable mode you can use `pip` directly. 
+If you prefer to install the package itself in editable mode you can use `pip` directly.
 
 ```bash
 python -m pip install -e .
+
+# With GPU support (requires CUDA 12.x)
+python -m pip install -e ".[gpu]"
 ```
 
 ### Usage
 Run a simulation by pointing `main.py` to a configuration file. Because `uv` manages the environment, use `uv run` to execute scripts without needing to manually activate the virtual environment:
 
 ```bash
-uv run python main.py config/fast_test.yaml
+uv run python simulations/main.py simulations/config/fast_test.yaml
 ```
 
-To enable GPU acceleration, ensure your config file (`config/*.yaml`) has:
+To enable GPU acceleration, ensure your config file (`simulations/config/*.yaml`) has:
 
 ```yaml
 simulation:
@@ -154,17 +164,17 @@ simulation:
 Run a simulation by pointing `main.py` to a configuration file:
 
 ```bash
-python main.py config/fast_test.yaml
+python simulations/main.py simulations/config/fast_test.yaml
 ```
 
-To enable GPU acceleration, ensure your config file (`config/*.yaml`) has:
+To enable GPU acceleration, ensure your config file (`simulations/config/*.yaml`) has:
 ```yaml
 simulation:
   backend: "gpu"
 ```
 
 ### Configuration
-Configuration is handled via YAML files in the `config/` directory. See `config/fast_test.yaml` for a documented example of parameters (domain size, material properties, laser path).
+Configuration is handled via YAML files in the `simulations/config/` directory. See `simulations/config/fast_test.yaml` for a documented example of parameters (domain size, material properties, laser path).
 
 ## Output & Visualization
 
