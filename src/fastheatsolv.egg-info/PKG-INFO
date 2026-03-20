@@ -13,6 +13,11 @@ Requires-Dist: pyyaml>=6.0.3
 Requires-Dist: scipy>=1.17.1
 Provides-Extra: gpu
 Requires-Dist: cupy-cuda12x>=14.0.1; extra == "gpu"
+Requires-Dist: nvidia-cufft-cu12; extra == "gpu"
+Requires-Dist: nvidia-cublas-cu12; extra == "gpu"
+Requires-Dist: nvidia-cusolver-cu12; extra == "gpu"
+Requires-Dist: nvidia-curand-cu12; extra == "gpu"
+Requires-Dist: nvidia-cusparse-cu12; extra == "gpu"
 Provides-Extra: viz
 Requires-Dist: matplotlib>=3.10.8; extra == "viz"
 Provides-Extra: dev
@@ -174,7 +179,7 @@ simulation:
 ```
 
 ### Configuration
-Configuration is handled via YAML files in the `simulations/config/` directory. See `simulations/config/fast_test.yaml` for a documented example of parameters (domain size, material properties, laser path).
+Configuration is handled via YAML files in the `config/` directory. See `config/fast_test.yaml` for a documented example of parameters (domain size, material properties, laser path).
 
 ## Output & Visualization
 
