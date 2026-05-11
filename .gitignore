@@ -28,3 +28,8 @@ docs/api/
 # Files from packaging/build metadata
 *.egg-info/_build/
 *.egg-info
+
+# Local planning docs
+backend_plan.md
+integration_test.md
+vectorization_plan.md
