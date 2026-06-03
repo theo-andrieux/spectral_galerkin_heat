@@ -33,3 +33,4 @@ docs/api/
 backend_plan.md
 integration_test.md
 vectorization_plan.md
+unit_test_plan.md
