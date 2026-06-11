@@ -22,8 +22,8 @@ fastHeatSolv uses [uv](https://github.com/astral-sh/uv) to manage its environmen
 <!-- TODO: restore the clone step once the repository is public.
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Andrieux-LMS/spectral-galerkin-AM.git
-   cd spectral-galerkin-AM
+   git clone https://github.com/TheoADX/fastHeatSolv.git
+   cd fastHeatSolv
    ```
 -->
 

@@ -11,6 +11,23 @@ from fast_heat_solv.core.laser import LaserPath, LaserState
 import numpy as np
 
 class GCodeLaserPath(LaserPath):
+    """:class:`~fast_heat_solv.core.laser.LaserPath` driven by a G-code file.
+
+    The file is parsed once at construction into a list of linear segments,
+    each carrying its start/end positions, start/end times, power, and on/off
+    state. :meth:`get_state` then interpolates position and velocity within the
+    active segment at query time. Coordinates are converted to meters on parse
+    (``G21`` mm or ``G20`` inches); power follows ``M3 S<power>`` / ``M5``.
+
+    Parameters
+    ----------
+    gcode_file : str
+        Path to the G-code file to parse.
+    initial_position : tuple[float, float], optional
+        Laser ``(x, y)`` before the first segment, in the file's native units
+        (scaled to meters internally). Defaults to ``(0.0, 0.0)``.
+    """
+
     def __init__(self, gcode_file: str, initial_position=(0.0, 0.0)):
         self.segments, self.unit_scale = self._parse_gcode(gcode_file)
         # Store initial position as float32 (scaled to meters)
@@ -21,6 +38,24 @@ class GCodeLaserPath(LaserPath):
         self.current_segment = 0
 
     def _parse_gcode(self, filepath):
+        """Parse a G-code file into timed laser segments.
+
+        Recognises ``G0``/``G1`` moves (with ``X``/``Y``/``F``), ``M3 S<power>``
+        (laser on) and ``M5`` (laser off), plus ``G20``/``G21`` unit modes.
+        Segment durations are derived from the feedrate (``F``, mm/min).
+
+        Parameters
+        ----------
+        filepath : str
+            Path to the G-code file.
+
+        Returns
+        -------
+        tuple
+            ``(segments, unit_scale)`` where ``segments`` is a list of
+            ``(start_xy, end_xy, t0, t1, power, is_on)`` tuples and
+            ``unit_scale`` is the factor applied to convert file units to meters.
+        """
         # Parses G0 (move), G1 (linear cut), M3/M5 for power, and G21 for units
         segments = []
         current_pos = [0.0, 0.0]
@@ -88,6 +123,25 @@ class GCodeLaserPath(LaserPath):
         return segments, unit_scale
 
     def get_state(self, time: float, dt: float) -> LaserState:
+        """Return the laser state at ``time`` by interpolating the active segment.
+
+        Position is linearly interpolated between the segment endpoints and
+        velocity is estimated from the displacement over ``dt``. Before the
+        first segment the laser sits (off) at ``initial_position``; after the
+        last segment it holds the final position with the laser off.
+
+        Parameters
+        ----------
+        time : float
+            Current simulation time in seconds.
+        dt : float
+            Time step length in seconds, used for the velocity estimate.
+
+        Returns
+        -------
+        LaserState
+            Position, power, on/off flag, and velocity at ``time``.
+        """
         # Find the segment for the given time
         for seg in self.segments:
             start_pos, end_pos, t0, t1, power, is_on = seg
