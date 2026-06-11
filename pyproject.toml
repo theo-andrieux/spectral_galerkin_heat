@@ -49,8 +49,7 @@ docs = [
     "sphinx-design>=0.6.1",
 ]
 dev = [
-    "black>=26.3.1",
-    "isort>=8.0.1",
+    "ruff>=0.15.0",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
@@ -76,8 +75,7 @@ docs = [
     "sphinx-design>=0.6.1",
 ]
 dev = [
-    "black>=26.3.1",
-    "isort>=8.0.1",
+    "ruff>=0.15.0",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
@@ -98,6 +96,17 @@ markers = [
     "slow: heavy unit tests (e.g. numba JIT warm-up) kept in the default suite but flagged",
 ]
 #have to be decided if skipping integreation default
+
+# Ruff is the single source of truth for linting, import sorting (replaces
+# isort) and formatting (replaces black). Run: `ruff check .` and `ruff format .`
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# Default E/F set + import sorting (I, replaces isort). E501 (line length) and
+# the W whitespace rules are left to `ruff format`, not the linter.
+select = ["E4", "E7", "E9", "F", "I"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

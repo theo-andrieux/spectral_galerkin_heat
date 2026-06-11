@@ -34,13 +34,15 @@ def test_from_dict_minimal_defaults():
     assert isinstance(ctx.num, NumParams)
     assert isinstance(ctx.geom, GeomParams)
     assert ctx.method == "spectral"  # default
-    assert ctx.backend == "cpu"      # default
+    assert ctx.backend == "cpu"  # default
     assert ctx.mat.name == "Material"  # default applied
-    assert ctx.laser_path is None      # no gcode block
+    assert ctx.laser_path is None  # no gcode block
 
 
 def test_method_backend_lowercased():
-    ctx = SimulationContext.from_dict(_cfg(simulation={"method": "Spectral", "backend": "GPU"}))
+    ctx = SimulationContext.from_dict(
+        _cfg(simulation={"method": "Spectral", "backend": "GPU"})
+    )
     assert (ctx.method, ctx.backend) == ("spectral", "gpu")
 
 
@@ -50,7 +52,7 @@ def test_dt_correction_makes_steps_tile_t_end():
     ctx = SimulationContext.from_dict(_cfg(simulation={"dt": 3e-5, "duration": 1e-3}))
     num = ctx.num
     assert num.n_steps == round(num.t_end / num.dt_nominal)
-    assert num.dt != num.dt_nominal               # actually rescaled
+    assert num.dt != num.dt_nominal  # actually rescaled
     assert num.n_steps * num.dt == pytest.approx(num.t_end)
     assert num.dt_nominal == pytest.approx(np.float32(3e-5))  # nominal preserved
 
@@ -58,15 +60,17 @@ def test_dt_correction_makes_steps_tile_t_end():
 def test_get_value_unwraps_unit_dict_and_passes_scalars():
     # _get_value lets config fields be either a number or
     # a {value, unit}. Unit-tested directly so the two branches work
-    assert _get_value({"value": 200.0, "unit": "W"}) == 200.0  
-    assert _get_value(7.0) == 7.0                              
+    assert _get_value({"value": 200.0, "unit": "W"}) == 200.0
+    assert _get_value(7.0) == 7.0
 
 
 def test_unit_dict_values_unwrapped_in_parse():
     # Same {value, unit}, but test end-to-end through from_dict: a
     # laser power written as {value: 250, unit: "W"} must reach LaserParams.power
     # as the plain number 250
-    ctx = SimulationContext.from_dict(_cfg(laser={"power_nominal": {"value": 250.0, "unit": "W"}}))
+    ctx = SimulationContext.from_dict(
+        _cfg(laser={"power_nominal": {"value": 250.0, "unit": "W"}})
+    )
     assert ctx.laser.power == pytest.approx(250.0)
 
 
@@ -95,12 +99,18 @@ def test_from_dict_preserves_geom_axis_order():
 
 @pytest.mark.parametrize(
     "drop",
-    [("domain", "size"), ("domain", "mesh"), ("material", "rho"),
-     ("laser", "radius"), ("laser", "power_nominal"), ("simulation", "dt")],
+    [
+        ("domain", "size"),
+        ("domain", "mesh"),
+        ("material", "rho"),
+        ("laser", "radius"),
+        ("laser", "power_nominal"),
+        ("simulation", "dt"),
+    ],
 )
 def test_missing_required_key_raises(drop):
     # Documents the hard-required config keys.
-    #Each builds a minimal valid cfg, deletes exactly one 
+    # Each builds a minimal valid cfg, deletes exactly one
     # required key, and asserts from_dict rejects it with KeyError
     section, key = drop
     cfg = _cfg()

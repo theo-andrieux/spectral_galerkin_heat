@@ -8,26 +8,22 @@ in a few seconds with no external dependencies beyond numpy + scipy.
 
 from __future__ import annotations
 
-import os
-import sys
-
 import numpy as np
 import pytest
 
 # Import data classes from io_utils
 from fast_heat_solv.io_utils import StructuredField, UnstructuredField
-
 from fast_heat_solv.io_utils.compute_L2_error import (
+    _compute_vertex_volumes,
     _evaluate_on_grid,
     compute_L2,
     compute_L2_unstructured,
-    _compute_vertex_volumes,
 )
-
 
 # ---------------------------------------------------------------------------
 #  Helpers
 # ---------------------------------------------------------------------------
+
 
 def _analytical(x, y, z, Lx=1.0, Ly=1.0, Lz=1.0):
     """Smooth analytical field: sin(π x/Lx) · sin(π y/Ly) · sin(π z/Lz)."""
@@ -50,18 +46,26 @@ def _make_unstructured(n_pts, Lx=1.0, Ly=1.0, Lz=1.0, seed=42):
     """
     if n_pts < 8:
         raise ValueError("n_pts must be at least 8 to cover the corners")
-    
+
     # Deterministic sequence (fractional part of irrational steps)
     i = np.arange(n_pts - 8)
     x = (i * 0.6180339887) % Lx
     y = (i * 0.7320508075) % Ly
     z = (i * 0.5560265774) % Lz
-    
-    corners = np.array([
-        [0, 0, 0], [Lx, 0, 0], [0, Ly, 0], [Lx, Ly, 0],
-        [0, 0, Lz], [Lx, 0, Lz], [0, Ly, Lz], [Lx, Ly, Lz]
-    ])
-    
+
+    corners = np.array(
+        [
+            [0, 0, 0],
+            [Lx, 0, 0],
+            [0, Ly, 0],
+            [Lx, Ly, 0],
+            [0, 0, Lz],
+            [Lx, 0, Lz],
+            [0, Ly, Lz],
+            [Lx, Ly, Lz],
+        ]
+    )
+
     xyz = np.vstack([np.column_stack([x, y, z]), corners])
     T = _analytical(xyz[:, 0], xyz[:, 1], xyz[:, 2], Lx, Ly, Lz)
     return UnstructuredField(xyz=xyz, T=T)
@@ -70,6 +74,7 @@ def _make_unstructured(n_pts, Lx=1.0, Ly=1.0, Lz=1.0, seed=42):
 # ---------------------------------------------------------------------------
 #  Tests
 # ---------------------------------------------------------------------------
+
 
 class TestEvaluateOnGrid:
     """Tests for ``_evaluate_on_grid`` — the core interpolation dispatch."""
@@ -109,9 +114,9 @@ class TestEvaluateOnGrid:
 
         Zg, Yg, Xg = np.meshgrid(z, y, x, indexing="ij")
         T_ref = _analytical(Xg, Yg, Zg)
-        
+
         # rel covers the interior;
-        # abs is the fallback for near-zero values 
+        # abs is the fallback for near-zero values
         assert T == pytest.approx(T_ref, rel=0.01, abs=0.01)
 
     def test_output_shape(self):
@@ -157,6 +162,7 @@ class TestComputeL2:
         assert result["Linf"] == pytest.approx(delta, abs=1e-12)
         assert result["volume"] == pytest.approx(vol, rel=1e-4)
 
+
 class TestStructuredVsUnstructured:
     """End-to-end test: structured and unstructured fields representing the
     same analytical solution should yield a small L2 error when compared
@@ -181,7 +187,9 @@ class TestStructuredVsUnstructured:
         T_u = _evaluate_on_grid(uf, x, y, z)
 
         result = compute_L2(T_s, T_u, x, y, z)
-        print(f"Structured vs Unstructured L2_rel: {result['L2_rel']:.4f}, pct_valid: {result['pct_valid']:.1f}%")
+        print(
+            f"Structured vs Unstructured L2_rel: {result['L2_rel']:.4f}, pct_valid: {result['pct_valid']:.1f}%"
+        )
         # Both represent the same smooth function, so the relative L2
         # error should be small (dominated by the unstructured mesh
         # interpolation accuracy).
@@ -198,25 +206,31 @@ class TestComputeL2Unstructured:
     def _make_simple_tet_mesh():
         """Create a simple unit cube mesh with 5 tetrahedra."""
         # Unit cube corners
-        xyz = np.array([
-            [0, 0, 0],  # 0
-            [1, 0, 0],  # 1
-            [1, 1, 0],  # 2
-            [0, 1, 0],  # 3
-            [0, 0, 1],  # 4
-            [1, 0, 1],  # 5
-            [1, 1, 1],  # 6
-            [0, 1, 1],  # 7
-        ], dtype=np.float64)
+        xyz = np.array(
+            [
+                [0, 0, 0],  # 0
+                [1, 0, 0],  # 1
+                [1, 1, 0],  # 2
+                [0, 1, 0],  # 3
+                [0, 0, 1],  # 4
+                [1, 0, 1],  # 5
+                [1, 1, 1],  # 6
+                [0, 1, 1],  # 7
+            ],
+            dtype=np.float64,
+        )
 
         # 5 tetrahedra filling the unit cube
-        connectivity = np.array([
-            [0, 1, 3, 4],
-            [1, 2, 3, 6],
-            [1, 3, 4, 6],
-            [3, 4, 6, 7],
-            [1, 4, 5, 6],
-        ], dtype=np.int64)
+        connectivity = np.array(
+            [
+                [0, 1, 3, 4],
+                [1, 2, 3, 6],
+                [1, 3, 4, 6],
+                [3, 4, 6, 7],
+                [1, 4, 5, 6],
+            ],
+            dtype=np.int64,
+        )
 
         return xyz, connectivity
 
@@ -256,4 +270,3 @@ class TestComputeL2Unstructured:
 
         assert result["L2_abs"] == pytest.approx(expected_L2, rel=1e-10)
         assert not np.isnan(result["L2_abs"]), "L2_abs should never be NaN"
-

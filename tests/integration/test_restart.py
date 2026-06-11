@@ -15,12 +15,26 @@ import pytest
 from fast_heat_solv.core.parameters import SimulationContext
 
 _CONFIG = {
-    "simulation": {"method": "spectral", "backend": "cpu", "duration": 3e-5, "dt": 6e-6},
+    "simulation": {
+        "method": "spectral",
+        "backend": "cpu",
+        "duration": 3e-5,
+        "dt": 6e-6,
+    },
     "domain": {"size": [4e-4, 4e-4, 1e-4], "mesh": [24, 24, 12]},
     "material": {
-        "name": "316L", "rho": 7850.0, "k": 15.0, "Cp": 500.0, "L_f": 267700.0,
-        "T_solidus": 1700.0, "T_liquidus": 1800.0, "T0": 293.0,
-        "DeltaH_LV": 7.41e6, "R_v": 150.774, "Pa": 101325.0, "T_boil": 3090.0,
+        "name": "316L",
+        "rho": 7850.0,
+        "k": 15.0,
+        "Cp": 500.0,
+        "L_f": 267700.0,
+        "T_solidus": 1700.0,
+        "T_liquidus": 1800.0,
+        "T0": 293.0,
+        "DeltaH_LV": 7.41e6,
+        "R_v": 150.774,
+        "Pa": 101325.0,
+        "T_boil": 3090.0,
     },
     "laser": {"radius": 60.0e-6, "absorptivity": 0.3, "power_nominal": 200.0},
     "io": {},
@@ -49,6 +63,7 @@ def test_set_state_roundtrip(fixed_laser):
     # Recover the cell-centred field set_state consumes (exact inverse of its
     # forward DCT_II·scale), then inject it into a fresh solver.
     import math
+
     k = solver.backend.kernels
     geom = ctx.geom
     scale = math.sqrt(float(geom.d.x * geom.d.y * geom.d.z))

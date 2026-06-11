@@ -12,7 +12,10 @@ def test_list_runs_empty_and_sorted(tmp_path):
     (tmp_path / "20260101-000000_a").mkdir()
     (tmp_path / "20260102-000000_b").mkdir()
     (tmp_path / "note.txt").write_text("x")  # files ignored
-    assert list_runs(str(tmp_path)) == ["20260102-000000_b", "20260101-000000_a"]  # newest first
+    assert list_runs(str(tmp_path)) == [
+        "20260102-000000_b",
+        "20260101-000000_a",
+    ]  # newest first
 
 
 def test_load_run_missing_dir_raises(tmp_path):

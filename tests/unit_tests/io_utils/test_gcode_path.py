@@ -1,6 +1,5 @@
 """Tests for the G-code parser / interpolation (io_utils/gcode_path.py)."""
 
-import numpy as np
 import pytest
 
 from fast_heat_solv.io_utils.gcode_path import GCodeLaserPath

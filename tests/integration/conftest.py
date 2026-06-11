@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Laser implementations
 # ---------------------------------------------------------------------------
 
+
 class FixedLaser(LaserPath):
     """Stationary laser at a fixed (x, y) with constant power."""
 
@@ -70,6 +71,7 @@ def constant_velocity_laser():
 # Physics-sanity / convergence helpers
 # ---------------------------------------------------------------------------
 
+
 def _assert_field_sane(T: np.ndarray, T0: float) -> None:
     assert not np.isnan(T).any(), "NaN values detected in temperature field"
     assert not np.isinf(T).any(), "Inf values detected in temperature field"
@@ -113,7 +115,10 @@ def _log_picard_iterations(runner):
         if counts:
             logger.info(
                 "Picard iterations per step (%d steps): %s | min=%d max=%d mean=%.1f",
-                len(counts), counts, min(counts), max(counts),
+                len(counts),
+                counts,
+                min(counts),
+                max(counts),
                 sum(counts) / len(counts),
             )
 

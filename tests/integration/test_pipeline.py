@@ -35,14 +35,26 @@ from fast_heat_solv.core.parameters import SimulationContext
 # ~25 cells.  10 steps at dt = 6 µs keeps the surface below T_liquidus.
 _CONFIG = {
     "simulation": {
-        "method": "spectral", "backend": "cpu",
-        "duration": 6e-5, "dt": 6e-6, "update_interval": 1e-3,
+        "method": "spectral",
+        "backend": "cpu",
+        "duration": 6e-5,
+        "dt": 6e-6,
+        "update_interval": 1e-3,
     },
     "domain": {"size": [4e-4, 4e-4, 1e-4], "mesh": [32, 32, 16]},
     "material": {
-        "name": "316L", "rho": 7850.0, "k": 15.0, "Cp": 500.0, "L_f": 267700.0,
-        "T_solidus": 1700.0, "T_liquidus": 1800.0, "T0": 293.0,
-        "DeltaH_LV": 7.41e6, "R_v": 150.774, "Pa": 101325.0, "T_boil": 3090.0,
+        "name": "316L",
+        "rho": 7850.0,
+        "k": 15.0,
+        "Cp": 500.0,
+        "L_f": 267700.0,
+        "T_solidus": 1700.0,
+        "T_liquidus": 1800.0,
+        "T0": 293.0,
+        "DeltaH_LV": 7.41e6,
+        "R_v": 150.774,
+        "Pa": 101325.0,
+        "T_boil": 3090.0,
     },
     "laser": {"radius": 60.0e-6, "absorptivity": 0.3, "power_nominal": 200.0},
     "io": {"at_end": ["full_volume"]},
@@ -77,9 +89,14 @@ def _run_final_field(cfg, run_dir, monkeypatch, fixed_laser) -> np.ndarray:
 
 
 @pytest.mark.integration
-def test_cpu_simulation_e2e(tmp_path, monkeypatch, fixed_laser,
-                            assert_field_sane, assert_final_step_converged,
-                            log_picard_iterations):
+def test_cpu_simulation_e2e(
+    tmp_path,
+    monkeypatch,
+    fixed_laser,
+    assert_field_sane,
+    assert_final_step_converged,
+    log_picard_iterations,
+):
     """Full CPU pipeline: config → solver → 10-step loop → XDMF output."""
     from fast_heat_solv.runner import StandaloneHeatRunner
     from fast_heat_solv.solvers import build_solver
@@ -102,12 +119,18 @@ def test_cpu_simulation_e2e(tmp_path, monkeypatch, fixed_laser,
 
 @pytest.mark.integration
 @pytest.mark.gpu
-def test_gpu_simulation_e2e(tmp_path, monkeypatch, fixed_laser,
-                            assert_field_sane, assert_final_step_converged,
-                            log_picard_iterations):
+def test_gpu_simulation_e2e(
+    tmp_path,
+    monkeypatch,
+    fixed_laser,
+    assert_field_sane,
+    assert_final_step_converged,
+    log_picard_iterations,
+):
     """GPU pipeline smoke test — skipped when CuPy / CUDA is unavailable."""
     try:
         import cupy
+
         cupy.cuda.Device(0).compute_capability
     except Exception:
         pytest.skip("CuPy not available or no CUDA device found")
@@ -138,6 +161,7 @@ def test_cpu_gpu_equivalence_e2e(tmp_path, monkeypatch, fixed_laser):
     """CPU and GPU backends must produce the same final temperature field."""
     try:
         import cupy
+
         cupy.cuda.Device(0).compute_capability
     except Exception:
         pytest.skip("CuPy not available or no CUDA device found")

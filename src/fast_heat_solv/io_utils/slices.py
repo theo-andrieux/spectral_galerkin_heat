@@ -293,7 +293,7 @@ def _plot_meltpool(U, V, T_grid, xlabel, ylabel, liquidus, solidus, title, outpu
         # Calculate magnitude for arrow scaling and normalization
         mag = np.sqrt(dT_dU**2 + dT_dV**2)
         avg_mag = 1.0 #np.mean(mag) if np.mean(mag) > 0 else 1.0
-        print(f"Average gradient magnitude: {avg_mag:.2f} K/µm")
+        logger.info(f"Average gradient magnitude: {avg_mag:.2f} K/µm")
         
         # Normalize vectors against the average gradient magnitude
         # We plot negative gradient (heat flow direction)
@@ -303,8 +303,7 @@ def _plot_meltpool(U, V, T_grid, xlabel, ylabel, liquidus, solidus, title, outpu
         ax.quiver(U[skip], V[skip], dU_norm[skip], dV_norm[skip], 
                   color='black', alpha=0.5, scale=20, width=0.002)
     except Exception as e:
-        logger.warning("Could not plot gradients: %s", e)
-        print("Warning: Gradient plotting failed, skipping this step.")
+        logger.warning("Could not plot gradients, skipping this step: %s", e)
 
     # 4. Styling
     ax.set_aspect('equal')

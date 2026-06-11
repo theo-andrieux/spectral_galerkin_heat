@@ -3,6 +3,12 @@ out/
 validation_results/
 
 
+# Coverage data
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Python bytecode
 __pycache__/
 *.py[cod]

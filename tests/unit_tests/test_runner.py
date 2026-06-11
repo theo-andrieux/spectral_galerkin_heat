@@ -11,7 +11,10 @@ from fast_heat_solv.runner import StandaloneHeatRunner, initialize_run_logging
 
 def _ctx(n_steps=3, dt=1e-6, dt_nominal=1e-6):
     num = SimpleNamespace(
-        dt=dt, dt_nominal=dt_nominal, t_end=n_steps * dt, n_steps=n_steps,
+        dt=dt,
+        dt_nominal=dt_nominal,
+        t_end=n_steps * dt,
+        n_steps=n_steps,
         update_interval=1e9,  # large -> ETA logging only fires on the final step
     )
     return SimpleNamespace(num=num, laser_path=None)
@@ -72,14 +75,21 @@ def test_run_io_lifecycle_order_and_finalize():
     solver, io = _Solver(), _IO()
     StandaloneHeatRunner(_ctx(n_steps=2), solver, io_manager=io).run()
     assert io.events == [
-        "init", ("step", 0), ("step", 1), ("step", 2), ("end", 2), "final",
+        "init",
+        ("step", 0),
+        ("step", 1),
+        ("step", 2),
+        ("end", 2),
+        "final",
     ]
     assert solver.finalized  # solver.finalize() called
 
 
 def test_dt_correction_is_logged(caplog):
     caplog.set_level(logging.INFO, logger="fast_heat_solv.runner")
-    StandaloneHeatRunner(_ctx(dt=1.0e-6, dt_nominal=1.1e-6), _Solver(), io_manager=_IO()).run()
+    StandaloneHeatRunner(
+        _ctx(dt=1.0e-6, dt_nominal=1.1e-6), _Solver(), io_manager=_IO()
+    ).run()
     assert "dt correction" in caplog.text
 
 
@@ -89,8 +99,8 @@ def test_telemetry_runs_without_psutil(caplog, monkeypatch):
     caplog.set_level(logging.INFO, logger="fast_heat_solv.runner")
     io = _IO()
     StandaloneHeatRunner(_ctx(), _Solver(), io_manager=io).run()
-    assert "[ETA]" in caplog.text   # telemetry produced a finite ETA line
-    assert "final" in io.events     # run completed cleanly
+    assert "[ETA]" in caplog.text  # telemetry produced a finite ETA line
+    assert "final" in io.events  # run completed cleanly
 
 
 @pytest.mark.slow
@@ -108,6 +118,6 @@ def test_initialize_run_logging_header(tmp_path):
     initialize_run_logging(config, str(yaml_path), str(out_dir))
 
     log = (out_dir / "logs" / "simulation.log").read_text()
-    assert "NOT FOUND" in log          # missing g-code labelled
+    assert "NOT FOUND" in log  # missing g-code labelled
     assert "Git Commit       : N/A" in log
     assert (out_dir / "config.yaml").exists()  # config copied in

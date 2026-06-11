@@ -1,15 +1,14 @@
 """Tests for xdmf_io module."""
+
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import h5py
 import numpy as np
-import pytest
 
 from fast_heat_solv.io_utils import (
-    XdmfBuilder,
     StructuredField,
+    XdmfBuilder,
     load_xdmf,
     write_structured_fields,
 )

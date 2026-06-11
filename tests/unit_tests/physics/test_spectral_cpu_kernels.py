@@ -12,8 +12,8 @@ from fast_heat_solv.core.parameters import GeomParams
 from fast_heat_solv.core.vector import Vec3
 from fast_heat_solv.physics import spectral_cpu_kernels as k
 
-
 # --- Transforms -------------------------------------------------------------
+
 
 @pytest.mark.slow
 def test_dct_idct_roundtrip():
@@ -28,12 +28,13 @@ def test_dct_of_constant_is_single_impulse():
     # magnitude = prod(sqrt(n_axis)) = n^{3/2} for an n^3 cube of ones.
     n = 4
     out = k.DCT_II(np.ones((n, n, n), dtype=np.float32))
-    assert out[0, 0, 0] == pytest.approx(n ** 1.5, rel=1e-4)
+    assert out[0, 0, 0] == pytest.approx(n**1.5, rel=1e-4)
     out[0, 0, 0] = 0.0
     assert np.allclose(out, 0.0, atol=1e-4)
 
 
 # --- ETD mode updates (hand-computed) ---------------------------------------
+
 
 @pytest.mark.slow
 def test_update_modes_etd1():
@@ -71,10 +72,11 @@ def test_add_bottom_surface_source():
 
 # --- Source terms -----------------------------------------------------------
 
+
 def test_gaussian_laser_flux_peak_and_integral():
     # Plain NumPy. Peak at the beam centre == laser_coef; the discrete
     # integral matches the analytic Gaussian integral laser_coef * pi*r^2/2.
-    nx = ny = 200
+    nx = 200
     dx = 5e-6
     coords = (np.arange(nx) + 0.5) * dx
     cx = cy = coords[nx // 2]
@@ -83,6 +85,7 @@ def test_gaussian_laser_flux_peak_and_integral():
     assert q.max() == pytest.approx(coef, rel=1e-6)
     integral = q.sum() * dx * dx
     assert integral == pytest.approx(coef * np.pi * r**2 / 2, rel=0.02)
+
 
 def test_shift_flux_half_pixel_interpolates():
     # A sub-pixel shift exercises the order-1 (linear) interpolation, not just
@@ -97,17 +100,20 @@ def test_shift_flux_half_pixel_interpolates():
 
 # --- Latent heat (mushy zone) ----------------------------------------------
 
+
 @pytest.mark.slow
 def test_latent_heat_source_indicator_and_sign():
     # Oracle = the documented formula Q = -rho*L/((T_L-T_S)*dt) * dT,
     # active only inside the mushy band [T_S, T_L]. (physics confirmed)
     T_S, T_L, rho, L, dt = 1700.0, 1800.0, 7900.0, 2.5e5, 1e-6
-    T_curr = np.array([[[1600.0, 1750.0, 1900.0]]], dtype=np.float32)  # below / in / above
+    T_curr = np.array(
+        [[[1600.0, 1750.0, 1900.0]]], dtype=np.float32
+    )  # below / in / above
     T_prev = np.array([[[1600.0, 1700.0, 1900.0]]], dtype=np.float32)
     out = np.empty_like(T_curr)
     k.compute_source_term_from_temperature(T_curr, T_prev, T_S, T_L, rho, L, dt, out)
-    assert out[0, 0, 0] == 0.0   # below band
-    assert out[0, 0, 2] == 0.0   # above band
+    assert out[0, 0, 0] == 0.0  # below band
+    assert out[0, 0, 2] == 0.0  # above band
     # in band, heating (dT>0) absorbs energy -> negative source of exact magnitude.
     expected = -rho * L / ((T_L - T_S) * dt) * (1750.0 - 1700.0)
     assert out[0, 0, 1] == pytest.approx(expected, rel=1e-4)
@@ -127,6 +133,7 @@ def test_latent_heat_clamps_tprev_into_band():
 
 # --- Evaporation flux -------------------------------------------------------
 
+
 @pytest.mark.slow
 def test_evaporation_arrhenius_form_and_monotonic():
     # Above liquidus the flux follows the documented Arrhenius law; oracle =
@@ -141,6 +148,6 @@ def test_evaporation_arrhenius_form_and_monotonic():
     T = np.array([[2000.0, 2200.0]], dtype=np.float32)
     q = np.empty((1, 2), dtype=np.float32)
     k.compute_evaporation_flux(T, q, P0, T_boil, dH, R_v, T_liq)
-    assert q[0, 0] > 0.0                                       # non-zero above liquidus
+    assert q[0, 0] > 0.0  # non-zero above liquidus
     assert q[0, 0] == pytest.approx(expected(2000.0), rel=1e-4)  # exact formula
-    assert q[0, 1] > q[0, 0]                                   # rises with surface T
+    assert q[0, 1] > q[0, 0]  # rises with surface T

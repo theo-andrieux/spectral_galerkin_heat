@@ -10,6 +10,7 @@ from fast_heat_solv.solvers.spectral_cpu_linear import SpectralSolverCPULinear
 
 class _Ctx:
     """Minimal stand-in: initialize() only reads context.io."""
+
     def __init__(self, io):
         self.io = io
 
@@ -21,6 +22,7 @@ def linear_state(tiny_context):
 
 
 # --- path / lifecycle (fast) ------------------------------------------------
+
 
 def test_get_output_path_before_init_raises():
     # Paths are only meaningful once initialize() has created the run dir.
@@ -53,10 +55,13 @@ def test_save_field_hdf5_shape_mismatch_raises(tmp_path):
     field = np.zeros((2, 2, 2), dtype=np.float32)
     coords = (np.arange(3), np.arange(2), np.arange(2))  # x len 3 != nx 2
     with pytest.raises(ValueError):
-        _save_field_to_hdf5(str(tmp_path / "f"), field, coords, value_name="temperature")
+        _save_field_to_hdf5(
+            str(tmp_path / "f"), field, coords, value_name="temperature"
+        )
 
 
 # --- output scheduling (fast; save_step is stubbed out) ---------------------
+
 
 def test_process_step_writes_only_on_interval(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
@@ -94,6 +99,7 @@ def test_process_end_saves_each_at_end_type(tmp_path, monkeypatch):
 
 # --- load_step --------------------------------------------------------------
 
+
 def test_load_step_uninitialized_returns_none():
     # Loading before initialize() returns None (no run dir), not a crash.
     assert LocalFSIOManager().load_step() is None
@@ -117,7 +123,10 @@ def test_load_step_latest_and_index(tmp_path, monkeypatch):
 
 # --- full-volume / modes writing (real state, still numba-free) -------------
 
-def test_save_full_volume_writes_h5_and_xmf(tmp_path, monkeypatch, tiny_context, linear_state):
+
+def test_save_full_volume_writes_h5_and_xmf(
+    tmp_path, monkeypatch, tiny_context, linear_state
+):
     # full_volume writes the reconstructed field as field_stepNNNNNN.h5 + .xmf.
     monkeypatch.chdir(tmp_path)
     m = LocalFSIOManager()
@@ -135,7 +144,9 @@ def test_save_full_volume_writes_h5_and_xmf(tmp_path, monkeypatch, tiny_context,
         assert t.attrs["step"] == 0
 
 
-def test_save_modes_appends_across_calls(tmp_path, monkeypatch, tiny_context, linear_state):
+def test_save_modes_appends_across_calls(
+    tmp_path, monkeypatch, tiny_context, linear_state
+):
     # modes output appends each step to one resizable HDF5 dataset.
     monkeypatch.chdir(tmp_path)
     m = LocalFSIOManager()
@@ -148,7 +159,9 @@ def test_save_modes_appends_across_calls(tmp_path, monkeypatch, tiny_context, li
         assert list(f["step"][:]) == [0, 1]
 
 
-def test_profiles_roundtrip_through_loader(tmp_path, monkeypatch, tiny_context, linear_state):
+def test_profiles_roundtrip_through_loader(
+    tmp_path, monkeypatch, tiny_context, linear_state
+):
     # Pofiles written by the manager must be discoverable by SimulationResult.
     from fast_heat_solv.io_utils.loader import SimulationResult
 

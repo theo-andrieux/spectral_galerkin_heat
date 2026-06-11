@@ -39,16 +39,29 @@ _X_END = _X_START + _V * _T_TOTAL
 _NX, _NY, _NZ, _N_STEPS = 128, 64, 160, 100
 
 _MAT = {
-    "name": "316L", "rho": _RHO, "k": _K, "Cp": _CP,
-    "L_f": 2.677e5, "T_solidus": 1674.15, "T_liquidus": 1697.15, "T0": _T0,
-    "DeltaH_LV": 7.416e6, "R_v": 150.774, "Pa": 101325.0, "T_boil": 3090.0,
+    "name": "316L",
+    "rho": _RHO,
+    "k": _K,
+    "Cp": _CP,
+    "L_f": 2.677e5,
+    "T_solidus": 1674.15,
+    "T_liquidus": 1697.15,
+    "T0": _T0,
+    "DeltaH_LV": 7.416e6,
+    "R_v": 150.774,
+    "Pa": 101325.0,
+    "T_boil": 3090.0,
 }
 
 
 def _config(power=_P, mesh=(_NX, _NY, _NZ), n_steps=_N_STEPS, backend="cpu_linear"):
     return {
-        "simulation": {"method": "spectral", "backend": backend,
-                       "duration": _T_TOTAL, "dt": _T_TOTAL / n_steps},
+        "simulation": {
+            "method": "spectral",
+            "backend": backend,
+            "duration": _T_TOTAL,
+            "dt": _T_TOTAL / n_steps,
+        },
         "domain": {"size": [_LX, _LY, _LZ], "mesh": list(mesh)},
         "material": copy.deepcopy(_MAT),
         "laser": {"radius": _R_B, "absorptivity": _A, "power_nominal": power},
@@ -82,6 +95,7 @@ def _run_linear_field(ctx):
 # linear — closed-form Eagar-Tsai (the correctness anchor)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 @pytest.mark.slow
 def test_linear_matches_eagar_tsai(constant_velocity_laser):
@@ -98,17 +112,31 @@ def test_linear_matches_eagar_tsai(constant_velocity_laser):
     # Time-centering: the solver holds the source piecewise-constant over each
     # ETD1 step (sampled at the step start), so the field at t_total corresponds
     # to the source at the *midpoint* of the last interval, x_end − ½·v·dt — not
-    # at x_end. 
-    # Verified: the L2 error is parabolic in the shift with a sharp minimum 
+    # at x_end.
+    # Verified: the L2 error is parabolic in the shift with a sharp minimum
     # at exactly ½·v·dt.
-    # The ETD1 field equals the field of a source whose entire trajectory 
-    # is shifted back by dt/2 if we change to ETD2 or RK4, reconsider this 
+    # The ETD1 field equals the field of a source whose entire trajectory
+    # is shifted back by dt/2 if we change to ETD2 or RK4, reconsider this
     # time-centering correction then.
     dt = _T_TOTAL / _N_STEPS
     T_ref = eagar_tsai_field(
-        rho=_RHO, k=_K, Cp=_CP, T0=_T0, A=_A, P=_P, r_b=_R_B,
-        Lx=_LX, Ly=_LY, Lz=_LZ, nx=_NX, ny=_NY, nz=_NZ,
-        x_end=_X_END - 0.5 * _V * dt, y_laser=_LY / 2, v=_V, t_total=_T_TOTAL,
+        rho=_RHO,
+        k=_K,
+        Cp=_CP,
+        T0=_T0,
+        A=_A,
+        P=_P,
+        r_b=_R_B,
+        Lx=_LX,
+        Ly=_LY,
+        Lz=_LZ,
+        nx=_NX,
+        ny=_NY,
+        nz=_NZ,
+        x_end=_X_END - 0.5 * _V * dt,
+        y_laser=_LY / 2,
+        v=_V,
+        t_total=_T_TOTAL,
         images=True,
     )
 
@@ -147,13 +175,16 @@ def test_linear_superposition(constant_velocity_laser):
     laser_p = constant_velocity_laser(_X_START, _LY / 2, _V, 0.0, _P)
     laser_2p = constant_velocity_laser(_X_START, _LY / 2, _V, 0.0, 2 * _P)
     T_p = _run_linear_field(_context(_config(power=_P, mesh=mesh, n_steps=ns), laser_p))
-    T_2p = _run_linear_field(_context(_config(power=2 * _P, mesh=mesh, n_steps=ns), laser_2p))
+    T_2p = _run_linear_field(
+        _context(_config(power=2 * _P, mesh=mesh, n_steps=ns), laser_2p)
+    )
     np.testing.assert_allclose(T_2p - _T0, 2.0 * (T_p - _T0), rtol=1e-4, atol=1e-2)
 
 
 # ---------------------------------------------------------------------------
 # non-linear — sanity bounds (no analytical reference)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.integration
 @pytest.mark.slow
@@ -162,7 +193,7 @@ def test_nonlinear_sanity_bounds(constant_velocity_laser, assert_final_step_conv
 
     Latent heat + evaporation are active; the evaporation flux is the
     regularizer that caps the surface temperature. No closed form — loose
-    bounds only. The linear peak for this case is above T_liquidus = 1697 K), 
+    bounds only. The linear peak for this case is above T_liquidus = 1697 K),
     so evaporation engages.
     """
     from fast_heat_solv.physics.spectral_helpers import reconstruct_temperature_DCT
@@ -196,4 +227,6 @@ def test_nonlinear_sanity_bounds(constant_velocity_laser, assert_final_step_conv
     # Regression guard on the peak surface temperature. Reference recorded on CPU
     T_peak_ref = 3560.49  # K, peak max(T_surface_max) on the 112×56×112 / 40-step case
     T_peak = max(surf_max)
-    assert abs(T_peak - T_peak_ref) < 20.0, f"T_peak={T_peak:.2f} K vs ref {T_peak_ref} K (±20 K)"
+    assert abs(T_peak - T_peak_ref) < 20.0, (
+        f"T_peak={T_peak:.2f} K vs ref {T_peak_ref} K (±20 K)"
+    )

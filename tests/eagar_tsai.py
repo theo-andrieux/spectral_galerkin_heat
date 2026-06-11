@@ -5,7 +5,7 @@ eagar_tsai.py
 Eagar-Tsai analytical solution for a moving Gaussian heat source on a
 semi-infinite substrate, with an optional method-of-images correction for the
 finite-domain insulated walls the spectral solver enforces.
-Reference : T. W. Eagar, N. S. Tsai, Temperature fields produced by traveling 
+Reference : T. W. Eagar, N. S. Tsai, Temperature fields produced by traveling
 distributed heat sources, Welding Journal 62 (12) (1983) 346s–355s.
 
 
@@ -99,8 +99,8 @@ def eagar_tsai_field(
     """
     alpha = k / (rho * Cp)
 
-    # Geometric τ-grid — dense near τ→0, we take aadvantage of 
-    # Exponential convergence of the series solution. 
+    # Geometric τ-grid — dense near τ→0, we take aadvantage of
+    # Exponential convergence of the series solution.
     tau_pts = np.geomspace(tau_min, t_total, n_tau)
     dtau = np.diff(tau_pts)
 
@@ -109,9 +109,9 @@ def eagar_tsai_field(
     y = np.linspace(0.0, Ly, ny + 1)
     z = np.linspace(0.0, Lz, nz + 1)
 
-    xi = x - x_end               # ξ = x_lab − x_laser
-    eta = y - y_laser            # η = y_lab − y_laser
-    depth = Lz - z               # surface = 0 at z = Lz, bottom = Lz at z = 0
+    xi = x - x_end  # ξ = x_lab − x_laser
+    eta = y - y_laser  # η = y_lab − y_laser
+    depth = Lz - z  # surface = 0 at z = Lz, bottom = Lz at z = 0
 
     # Method-of-images η offsets for reflections across y = 0 and y = Ly.
     eta_img_y0 = eta + 2 * y_laser
@@ -130,12 +130,12 @@ def eagar_tsai_field(
     buf_img = np.empty_like(T_field)
 
     for i in range(n_tau - 1):
-        tau = 0.5 * (tau_pts[i] + tau_pts[i + 1])   # midpoint of interval
-        w = dtau[i]                                  # interval width
+        tau = 0.5 * (tau_pts[i] + tau_pts[i + 1])  # midpoint of interval
+        w = dtau[i]  # interval width
 
-        denom_xy = 4.0 * alpha * tau + sigma_sq      # 4ατ + σ²
-        denom_z = 4.0 * alpha * tau                  # 4ατ (z-decay)
-        scalar = w / (np.sqrt(tau) * denom_xy)       # × dτ folded in
+        denom_xy = 4.0 * alpha * tau + sigma_sq  # 4ατ + σ²
+        denom_z = 4.0 * alpha * tau  # 4ατ (z-decay)
+        scalar = w / (np.sqrt(tau) * denom_xy)  # × dτ folded in
 
         # Separable 1-D exponentials.
         xi_shifted = xi + v * tau
@@ -187,10 +187,19 @@ def eagar_tsai_field(
 
 # Parameters from config/fast_test.yaml.
 _PARAMS = dict(
-    rho=7850.0, k=15.0, Cp=500.0, T0=293.0,
-    A=0.30, P=200.0, r_b=60.0e-6,
-    Lx=0.005, Ly=0.0025, Lz=0.00125,
-    nx=512, ny=256, nz=50,
+    rho=7850.0,
+    k=15.0,
+    Cp=500.0,
+    T0=293.0,
+    A=0.30,
+    P=200.0,
+    r_b=60.0e-6,
+    Lx=0.005,
+    Ly=0.0025,
+    Lz=0.00125,
+    nx=512,
+    ny=256,
+    nz=50,
 )
 # Laser goes x_start → x_end = domain centre; y fixed at Ly/2; v from F48000.
 _V_MAG = 0.8
@@ -242,10 +251,14 @@ def main() -> None:
     t_total = abs(x_end - _X_START) / _V_MAG
 
     print("Eagar–Tsai analytical solution (with method of images)")
-    print(f"  Domain  : {p['Lx']*1e3:.1f} × {p['Ly']*1e3:.1f} × {p['Lz']*1e3:.1f} mm")
+    print(
+        f"  Domain  : {p['Lx'] * 1e3:.1f} × {p['Ly'] * 1e3:.1f} × {p['Lz'] * 1e3:.1f} mm"
+    )
     print(f"  Mesh    : {p['nx']} × {p['ny']} × {p['nz']}")
-    print(f"  Laser   : P={p['P']} W, A={p['A']}, r_b={p['r_b']*1e6:.0f} µm, v={v:.2f} m/s")
-    print(f"  t_total : {t_total*1e6:.1f} µs")
+    print(
+        f"  Laser   : P={p['P']} W, A={p['A']}, r_b={p['r_b'] * 1e6:.0f} µm, v={v:.2f} m/s"
+    )
+    print(f"  t_total : {t_total * 1e6:.1f} µs")
 
     t0 = wall_clock.perf_counter()
     T_uncorrected = eagar_tsai_field(
@@ -255,15 +268,30 @@ def main() -> None:
         **p, x_end=x_end, y_laser=y_laser, v=v, t_total=t_total, images=True
     )
     print(f"\nDone in {wall_clock.perf_counter() - t0:.1f} s")
-    print(f"  Uncorrected : T_max = {T_uncorrected.max():.1f} K  T_min = {T_uncorrected.min():.1f} K")
-    print(f"  Corrected   : T_max = {T_corrected.max():.1f} K  T_min = {T_corrected.min():.1f} K")
+    print(
+        f"  Uncorrected : T_max = {T_uncorrected.max():.1f} K  T_min = {T_uncorrected.min():.1f} K"
+    )
+    print(
+        f"  Corrected   : T_max = {T_corrected.max():.1f} K  T_min = {T_corrected.min():.1f} K"
+    )
 
     x = np.linspace(0.0, p["Lx"], p["nx"] + 1)
     y = np.linspace(0.0, p["Ly"], p["ny"] + 1)
     z = np.linspace(0.0, p["Lz"], p["nz"] + 1)
-    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "validation_results")
+    out_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "validation_results"
+    )
     os.makedirs(out_dir, exist_ok=True)
-    save_kw = dict(x=x, y=y, z=z, t_total=t_total, v=v, x_laser=x_end, y_laser=y_laser, out_dir=out_dir)
+    save_kw = dict(
+        x=x,
+        y=y,
+        z=z,
+        t_total=t_total,
+        v=v,
+        x_laser=x_end,
+        y_laser=y_laser,
+        out_dir=out_dir,
+    )
     _save_field(T_uncorrected, "eagar_tsai", **save_kw)
     _save_field(T_corrected, "eagar_tsai_corrected", **save_kw)
 

@@ -21,7 +21,9 @@ def test_laserpath_subclass_returns_state():
     # A concrete subclass satisfying the contract is usable as a LaserPath.
     class ConstantVelocityLaser(LaserPath):
         def get_state(self, time, dt):
-            return LaserState(x=0.1 * time, y=0.0, power=200.0, is_on=True, v=(0.1, 0.0))
+            return LaserState(
+                x=0.1 * time, y=0.0, power=200.0, is_on=True, v=(0.1, 0.0)
+            )
 
     s = ConstantVelocityLaser().get_state(2.0, 0.1)
     assert isinstance(s, LaserState)

@@ -83,7 +83,7 @@ while t < context.num.t_end:
 Depending on your hardware, you can request `uv` to install different dependency groups:
 
 - **CPU Core (Recommended)**: `uv sync`
-- **GPU Backend**: `uv sync --group gpu` *(Requires CUDA 12.x)*
+- **GPU Backend**: `uv sync --group gpu` *(Requires the system CUDA 13.x toolkit; uses `cupy-cuda13x`)*
 - **Visualization**: `uv sync --group viz`
 - **Docs**: `uv sync --group docs`
 - **Everything**: `uv sync --all-groups`

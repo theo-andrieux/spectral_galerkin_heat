@@ -11,11 +11,9 @@ def test_heatsolver_is_abstract():
         HeatSolver()
 
     class MissingStep(HeatSolver):
-        def initialize(self, context):
-            ...
+        def initialize(self, context): ...
 
-        def finalize(self):
-            ...
+        def finalize(self): ...
 
     with pytest.raises(TypeError):
         MissingStep()

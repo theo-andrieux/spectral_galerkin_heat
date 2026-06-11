@@ -17,6 +17,7 @@ def cupy_backend():
     except Exception:
         pytest.skip("No CUDA device")
     from fast_heat_solv.backends import get_backend
+
     return get_backend("cupy")
 
 

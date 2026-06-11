@@ -598,32 +598,28 @@ def compare(
     write_error : bool
         If False, skip writing error XDMF/H5 files (faster).
     """
-    print("=" * 70)
-    print("  L2 Error Comparison")
-    print("=" * 70)
-    print(f"  File A : {path_a}  (reference)")
-    print(f"  File B : {path_b}")
-    print()
+    logger.info("L2 Error Comparison")
+    logger.info(f"  File A : {path_a}  (reference)")
+    logger.info(f"  File B : {path_b}")
 
     # 1. Load both fields
     logger.info("Loading files...")
     field_a = load_xdmf(path_a, attr_name=attr_a)
     field_b = load_xdmf(path_b, attr_name=attr_b)
 
-    print(f"  Grid A : {field_a.grid_type}", end="")
-    if isinstance(field_a, StructuredField):
-        print(f"  ({len(field_a.x)}x{len(field_a.y)}x{len(field_a.z)})", end="")
-    else:
-        print(f"  ({len(field_a.T)} vertices)", end="")
-    print(f"  t = {field_a.time}")
+    shape_a = (
+        f"({len(field_a.x)}x{len(field_a.y)}x{len(field_a.z)})"
+        if isinstance(field_a, StructuredField)
+        else f"({len(field_a.T)} vertices)"
+    )
+    logger.info(f"  Grid A : {field_a.grid_type}  {shape_a}  t = {field_a.time}")
 
-    print(f"  Grid B : {field_b.grid_type}", end="")
-    if isinstance(field_b, StructuredField):
-        print(f"  ({len(field_b.x)}x{len(field_b.y)}x{len(field_b.z)})", end="")
-    else:
-        print(f"  ({len(field_b.T)} vertices)", end="")
-    print(f"  t = {field_b.time}")
-    print()
+    shape_b = (
+        f"({len(field_b.x)}x{len(field_b.y)}x{len(field_b.z)})"
+        if isinstance(field_b, StructuredField)
+        else f"({len(field_b.T)} vertices)"
+    )
+    logger.info(f"  Grid B : {field_b.grid_type}  {shape_b}  t = {field_b.time}")
 
     # Determine comparison mode
     a_is_struct = isinstance(field_a, StructuredField)
@@ -636,16 +632,15 @@ def compare(
         aligned = _grids_aligned(field_a, field_b)
 
         if aligned:
-            print("  Mode: ALIGNED - direct pointwise comparison")
+            logger.info("  Mode: ALIGNED - direct pointwise comparison")
             x, y, z = field_a.x, field_a.y, field_a.z
             T_a = field_a.T
             T_b = field_b.T
             interp_info = "None (grids match)"
         else:
-            print("  Mode: STRUCTURED interpolation onto coarser grid")
+            logger.info("  Mode: STRUCTURED interpolation onto coarser grid")
             x, y, z = _make_common_grid(field_a, field_b)
-            print(f"  Common grid: {len(x)}x{len(y)}x{len(z)}")
-            print()
+            logger.info(f"  Common grid: {len(x)}x{len(y)}x{len(z)}")
 
             logger.info("Interpolating field A...")
             T_a = _evaluate_on_grid(field_a, x, y, z)
@@ -653,7 +648,6 @@ def compare(
             T_b = _evaluate_on_grid(field_b, x, y, z)
             interp_info = "RegularGridInterpolator (trilinear)"
 
-        print()
         norms = compute_L2_structured(T_a, T_b, x, y, z)
 
         if write_error:
@@ -683,9 +677,8 @@ def compare(
             struct_field, unstruct_field = field_b, field_a
             struct_label, unstruct_label = "B", "A"
 
-        print(f"  Mode: HYBRID - interpolate structured ({struct_label}) at unstructured vertices ({unstruct_label})")
-        print(f"         No Delaunay triangulation needed!")
-        print()
+        logger.info(f"  Mode: HYBRID - interpolate structured ({struct_label}) at unstructured vertices ({unstruct_label})")
+        logger.info("         No Delaunay triangulation needed!")
 
         # Check connectivity is available
         if unstruct_field.connectivity is None:
@@ -729,7 +722,6 @@ def compare(
             T_a = T_unstruct            # A (unstructured) native values
             T_b = T_struct_at_unstruct  # B (structured) evaluated at A's vertices
 
-        print()
         norms = compute_L2_unstructured(T_a, T_b, vertex_volumes)
         interp_info = f"RegularGridInterpolator on {struct_label}, evaluated at {unstruct_label} vertices"
 
@@ -759,13 +751,11 @@ def compare(
                 "Use --resolution NX,NY,NZ to specify common grid."
             )
 
-        print(f"  Mode: BOTH UNSTRUCTURED - common grid {resolution}")
-        print("  WARNING: Projecting unstructured meshes onto a uniform grid.")
-        print()
+        logger.info(f"  Mode: BOTH UNSTRUCTURED - common grid {resolution}")
+        logger.warning("Projecting unstructured meshes onto a uniform grid.")
 
         x, y, z = _make_common_grid(field_a, field_b, resolution=resolution)
-        print(f"  Common grid: {len(x)}x{len(y)}x{len(z)}")
-        print()
+        logger.info(f"  Common grid: {len(x)}x{len(y)}x{len(z)}")
 
         logger.info("Interpolating field A...")
         T_a = _evaluate_on_grid(field_a, x, y, z)
@@ -773,7 +763,6 @@ def compare(
         T_b = _evaluate_on_grid(field_b, x, y, z)
         interp_info = "LinearNDInterpolator (Delaunay)"
 
-        print()
         norms = compute_L2_structured(T_a, T_b, x, y, z)
 
         if write_error:
@@ -791,24 +780,19 @@ def compare(
                 time=field_a.time,
             )
 
-    # Print results
-    print("-" * 70)
-    print(f"  L2 absolute error  : {norms['L2_abs']:.6e}")
-    print(f"  L2 relative error  : {norms['L2_rel']:.6e}  ({norms['L2_rel']*100:.4f}%)")
-    print(f"  L_inf (max |err|)  : {norms['Linf']:.6e}")
-    print(f"  Integration volume : {norms['volume']:.6e} m^3")
-    print(f"  Valid points       : {norms['n_valid']}/{norms['n_total']} ({norms['pct_valid']:.1f}%)")
+    # Report results
+    logger.info(f"  L2 absolute error  : {norms['L2_abs']:.6e}")
+    logger.info(f"  L2 relative error  : {norms['L2_rel']:.6e}  ({norms['L2_rel'] * 100:.4f}%)")
+    logger.info(f"  L_inf (max |err|)  : {norms['Linf']:.6e}")
+    logger.info(f"  Integration volume : {norms['volume']:.6e} m^3")
+    logger.info(f"  Valid points       : {norms['n_valid']}/{norms['n_total']} ({norms['pct_valid']:.1f}%)")
     if norms["n_nan"] > 0:
-        print(f"  WARNING: {norms['n_nan']} NaN points (outside domain)")
-    print("-" * 70)
+        logger.warning(f"{norms['n_nan']} NaN points (outside domain)")
 
     if write_error:
-        print()
-        print(f"  Error written to: {output_base}.xdmf / .h5")
+        logger.info(f"  Error written to: {output_base}.xdmf / .h5")
 
-    print()
-    print(f"  Method: {interp_info}")
-    print("=" * 70)
+    logger.info(f"  Method: {interp_info}")
 
     return norms
 
