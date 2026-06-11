@@ -1,0 +1,57 @@
+name: Tests
+
+# CPU test suite. The opt-in `gpu` and `fenics` tiers are NOT run here:
+# GitHub-hosted runners have no CUDA device (the `gpu` marker auto-skips) and
+# FEniCS/dolfinx is a heavy conda stack. Those tiers run manually on a CUDA box
+# and in `fenicsx_env` respectively — see the commands at the bottom of this file.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/tests.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up uv (with cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install package + test toolchain
+        # `dev` group carries pytest / pytest-cov; no gpu/fenics extras on CPU CI.
+        run: uv sync --group dev
+
+      - name: Unit tier
+        run: uv run pytest
+
+      - name: Integration tier (CPU)
+        # gpu-marked cases auto-skip (no CUDA); fenics-marked cases importorskip.
+        run: uv run pytest -m integration
+
+# ---------------------------------------------------------------------------
+# Manual tiers (no GitHub-hosted runner can host these):
+#
+#   GPU (needs a CUDA box with CuPy):
+#       uv sync --group dev --group gpu
+#       uv run pytest -m gpu
+#       uv run pytest -m "integration and gpu"
+#
+#   FEniCS (needs the conda dolfinx stack):
+#       conda run -n fenicsx_env pytest -m "integration and fenics"
+# ---------------------------------------------------------------------------

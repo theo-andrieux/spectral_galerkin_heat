@@ -45,7 +45,10 @@ def test_evaporation_signature_matches():
 
 # --- numerical parity -------------------------------------------------------
 
-RTOL = 1e-5  # absorbs CPU/GPU FFT and reduction-order differences (float32)
+# Verified on a Quadro RTX 5000 (CUDA 12): the element-wise kernels are 
+# bit-identical, DCT/IDCT gives abs ≈ 7e-7 .
+# 1e-5 is related to float32 precision 
+RTOL = 1e-5
 
 
 @pytest.mark.gpu

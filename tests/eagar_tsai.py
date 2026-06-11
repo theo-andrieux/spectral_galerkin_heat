@@ -10,7 +10,8 @@ distributed heat sources, Welding Journal 62 (12) (1983) 346s–355s.
 
 
 This module is **both** an importable reference (used by the linear analytical
-validation test, plan §2.1) and a stand-alone script that writes the full 3-D
+validation test, which checks the spectral solver against this closed-form
+field) and a stand-alone script that writes the full 3-D
 field to HDF5 / XDMF.  The physics lives in :func:`eagar_tsai_field`; the
 ``__main__`` block is a wrapper that fixes the config parameters and
 saves the result.

@@ -1,4 +1,4 @@
-"""FEniCS / dolfinx finite-element cross-validation (§2.3, integration + fenics).
+"""FEniCS / dolfinx finite-element cross-validation (integration + fenics).
 
 Cross-validates the spectral solver (SG) against an *independent* numerical
 method — a P1 backward-Euler finite-element solve in dolfinx — in the **nonlinear
@@ -250,6 +250,6 @@ def test_matches_fenics_nonlinear(tmp_path):
     # Peaks must agree tightly (the evaporation balance pins the surface T).
     assert abs(float(T_sg.max()) - T_fe_max) < 30.0
     # Cross-method L2 band (computed on the FE mesh via the dedicated unstructured
-    # comparison). Verified ≈ 0.88 % on this config; <0.5 % needs the full long-
-    # track campaign. Freeze the *band*, not the value.
+    # comparison). Verified ≈ 0.88 % on this config; tightening below 0.5 % would
+    # need a longer track and finer mesh. Freeze the *band*, not the value.
     assert res["L2_rel"] < 0.012, f"L2_rel={res['L2_rel']:.5f}"

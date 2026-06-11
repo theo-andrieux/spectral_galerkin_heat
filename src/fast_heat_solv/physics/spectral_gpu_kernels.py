@@ -165,7 +165,7 @@ def add_bottom_surface_source(a_temp, KK, Cp_broadcast_bottom, B_scaled):
 
 
 @cuda.jit
-def compute_source_term_from_temperature(T_curr, T_prev, T_S, T_L, rho, L, dt, out):
+def _compute_source_term_from_temperature_kernel(T_curr, T_prev, T_S, T_L, rho, L, dt, out):
     """
     Compute Q = - rho * L * (1 / (TL - TS)) * (dT/dt) * Indicator(TS <= T <= TL)
     Used for latent heat calculation. GPU version (CUDA kernel).
@@ -189,6 +189,16 @@ def compute_source_term_from_temperature(T_curr, T_prev, T_S, T_L, rho, L, dt, o
             out[z, y, x] = factor * dT
         else:
             out[z, y, x] = 0.0
+
+
+def compute_source_term_from_temperature(T_curr, T_prev, T_S, T_L, rho, L, dt, out):
+    """Wrapper for the latent-heat source-term kernel (host-callable)."""
+    blockspergrid, threadsperblock = _launch_config(T_curr.shape)
+    _compute_source_term_from_temperature_kernel[blockspergrid, threadsperblock](
+        T_curr, T_prev, T_S, T_L, rho, L, dt, out
+    )
+
+
 def compute_evaporation_flux(T_surface, q_out, P0, T_boil, DeltaH_LV, R_v, T_liquidus):
     """Wrapper for Evaporation kernel."""
     blockspergrid, threadsperblock = _launch_config(T_surface.shape, (16, 16))
@@ -228,10 +238,7 @@ def _ndshift(field, shift_pixels, order, mode, cval):
 
 def _source_term(T_curr, T_prev, T_S, T_L, rho, L, dt, out):
     """Latent-heat source primitive (GPU): launch the CUDA source-term kernel."""
-    blockspergrid, threadsperblock = _launch_config(T_curr.shape)
-    compute_source_term_from_temperature[blockspergrid, threadsperblock](
-        T_curr, T_prev, T_S, T_L, rho, L, dt, out
-    )
+    compute_source_term_from_temperature(T_curr, T_prev, T_S, T_L, rho, L, dt, out)
 
 
 def DCT_II(q):
