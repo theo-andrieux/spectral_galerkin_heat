@@ -30,3 +30,4 @@ docs/api/
 *.egg-info
 
 # Local planning docs
+correction_plan.md
