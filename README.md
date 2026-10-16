@@ -15,6 +15,8 @@
 
 On a single-pass laser scan, the solver stays within 0.67% (relative L² error) of a high-fidelity finite element reference. On one CPU core it runs 6.2 times faster than the finite element model while using about ten times more degrees of freedom, and 227 times faster on a GPU. Temperature-dependent properties, latent heat, evaporation and surface fluxes are all included.
 
+Videos: [spectral Galerkin vs finite elements on the same clock](https://youtube.com/shorts/5TWUQ5sRDSw) · [part-scale scan of a 6 × 6 cm plate, 2,500 tracks](https://youtube.com/shorts/GVgByfCcPyE)
+
 ## What it does
 
 `spectral_galerkin_heat` solves transient heat transfer on cuboid domains under laser scanning, as in laser surface treatment and metal additive manufacturing. The heat equation is split into a linear, constant-coefficient reference operator, integrated analytically in a spectral eigenbasis, and a nonlinear forcing term (temperature-dependent properties, latent heat, surface fluxes) resolved by fixed-point iteration. This avoids the global algebraic solve of an implicit finite element step, and maps naturally onto GPUs.
