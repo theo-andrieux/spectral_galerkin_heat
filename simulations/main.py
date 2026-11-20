@@ -1,0 +1,204 @@
+"""Main entry point for running spectral_galerkin_heat simulations."""
+
+# Copyright 2026 Laboratoire de Mécanique des Solides (LMS),
+# École Polytechnique, CNRS UMR 7649, Institut Polytechnique de Paris,
+# Route de Saclay, Palaiseau, 91128, France.
+#
+# Author: Théo Andrieux, Jules Dichamp, Manas V. Upadhyay
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+__author__ = "Théo Andrieux, Jules Dichamp, Manas V. Upadhyay"
+__copyright__ = "Copyright 2026 Laboratoire de Mécanique des Solides (LMS), École Polytechnique, CNRS UMR 7649, Institut Polytechnique de Paris"
+
+import argparse
+import logging
+import os
+import shutil
+import sys
+from typing import Any
+
+import yaml
+
+from spectral_galerkin_heat.core.parameters import SimulationContext
+from spectral_galerkin_heat.io_utils.slices import generate_plots
+from spectral_galerkin_heat.runner import StandaloneHeatRunner
+from spectral_galerkin_heat.solvers import build_solver
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def load_config(path: str) -> dict[str, Any]:
+    """Load YAML configuration file."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Config file not found: {path}")
+    with open(path) as f:
+        return yaml.safe_load(f)
+
+def main():
+    parser = argparse.ArgumentParser(description="spectral_galerkin_heat: Spectral Heat Equation Solver")
+    parser.add_argument("config",default='examples/01_quickstart.yaml', help="Path to YAML configuration file")
+    parser.add_argument("--backend", default=None, choices=["cpu", "gpu", "cpu_linear"], help="Override backend (cpu/gpu/cpu_linear)")
+    parser.add_argument("--viz", action="store_true", help="Force visualization after simulation")
+    parser.add_argument("--no-viz", action="store_true", help="Disable automatic visualization")
+    args = parser.parse_args()
+
+    # 1. Load Config & Context
+    logger.info(f"Loading configuration from {args.config}")
+    config = load_config(args.config)
+    yaml_path = os.path.abspath(args.config)
+    config_dir = os.path.dirname(yaml_path)
+    context = SimulationContext.from_dict(config, config_dir=config_dir)
+
+    # 2. Determine Computing Backend
+    # Priority: CLI Argument > Config File > Default (CPU)
+    backend = args.backend
+    if not backend:
+        backend = config.get('simulation', {}).get('backend', 'cpu')
+    
+    # Actually set the context backend!
+    context.backend = backend
+    
+    logger.info(f"Using Backend: {backend.upper()}")
+    
+    run_dir = None
+
+    def _is_gpu_oom(exc):
+        """Check if exception is a CuPy OutOfMemoryError (or wraps one)."""
+        def _check_one(e):
+            # Check by type name (works even if cupy import fails)
+            if type(e).__name__ == "OutOfMemoryError" and "cupy" in type(e).__module__:
+                return True
+            # Also try direct isinstance check
+            try:
+                import cupy.cuda.memory
+                if isinstance(e, cupy.cuda.memory.OutOfMemoryError):
+                    return True
+            except ImportError:
+                pass
+            return False
+
+        # Check the exception itself
+        if _check_one(exc):
+            return True
+        # Check the chain of causes
+        cause = getattr(exc, '__cause__', None) or getattr(exc, '__context__', None)
+        while cause:
+            if _check_one(cause):
+                return True
+            cause = getattr(cause, '__cause__', None) or getattr(cause, '__context__', None)
+        return False
+
+    # 3. Build solver & workflow
+    try:
+        logger.info(f"Solver selector: backend='{context.backend}'")
+        solver = build_solver(context)
+        workflow = StandaloneHeatRunner(context, solver, config=config, yaml_path=yaml_path)
+
+        # 4. Run Simulation
+        workflow.run()
+
+    except Exception as e:
+        # Check if this is a GPU out-of-memory error - fallback to CPU
+        if backend == "gpu" and _is_gpu_oom(e):
+            logger.warning("GPU out of memory! Falling back to CPU backend...")
+
+            # Clean up the failed output directory before retrying
+            failed_dir = getattr(getattr(workflow, 'io_manager', None), 'base_dir', None)
+            if failed_dir and os.path.exists(failed_dir):
+                logger.info(f"Cleaning up failed GPU output directory: {failed_dir}")
+                shutil.rmtree(failed_dir, ignore_errors=True)
+
+            context.backend = "cpu"
+            try:
+                solver = build_solver(context)
+                workflow = StandaloneHeatRunner(context, solver, config=config, yaml_path=yaml_path)
+                workflow.run()
+            except Exception:
+                logger.exception("Simulation failed on CPU fallback")
+                sys.exit(1)
+        else:
+            logger.exception("Simulation Failed")
+            sys.exit(1)
+
+    # 5. Post-Processing / Visualization
+    viz_cfg = config.get('post_processing', {})
+    
+    
+    # Note: with the default IO settings, save_step already writes profiles and
+    # slices during the run, so this pass re-renders data that is already on
+    # disk. It is kept because it also works on a run whose IO was disabled.
+    should_visualize = viz_cfg.get('auto_visualize', False)
+    if args.viz:
+        should_visualize = True
+    if args.no_viz:
+        should_visualize = False
+
+    if should_visualize:
+        logger.info("Starting Visualization...")
+        
+        if run_dir and os.path.exists(run_dir):
+            logger.info(f"Visualizing results from: {run_dir}")
+            
+            try:
+                 # Passing the specific run directory to generate_plots.
+                 # The visualization tool should now load data using the loader utils
+                 # or scan the profiles/ folder within run_dir.
+                 generate_plots(
+                     run_dir=run_dir,
+                     show_ui=viz_cfg.get('show_gui', True),
+                     save_images=viz_cfg.get('save_images', True),
+                     output_dir=run_dir
+                 )
+            except Exception as e:
+                 logger.error(f"Visualization failed: {e!s}")
+        else:
+             logger.warning("Output directory not found or IOManager not active. Visualization skipped.")
+
+
+if __name__ == "__main__":
+    import cProfile
+    import pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    main()
+    profiler.disable()
+    # Try to write profiler output to diagnostics if possible
+    try:
+        # run_dir is set in main() as a global variable
+        run_dir = None
+        # Try to get run_dir from the main function's local scope
+        import inspect
+        frame = inspect.currentframe()
+        while frame:
+            if 'run_dir' in frame.f_locals:
+                run_dir = frame.f_locals['run_dir']
+                break
+            frame = frame.f_back
+        if run_dir and os.path.exists(run_dir):
+            diag_dir = os.path.join(run_dir, "diagnostics")
+            os.makedirs(diag_dir, exist_ok=True)
+            prof_path = os.path.join(diag_dir, "profiler.txt")
+            with open(prof_path, "w") as f:
+                stats = pstats.Stats(profiler, stream=f).sort_stats('cumtime')
+                stats.print_stats(40)
+            print(f"[cProfile] Top 40 functions written to {prof_path}")
+        else:
+            stats = pstats.Stats(profiler).sort_stats('cumtime')
+            stats.print_stats(40)
+    except Exception as e:
+        print(f"[cProfile] Failed to write diagnostics: {e}")
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats(40)
