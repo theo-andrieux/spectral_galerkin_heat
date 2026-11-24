@@ -40,7 +40,7 @@ phase change and evaporation.
 # Canonical version for the whole project: pyproject.toml reads this attribute
 # via [tool.setuptools.dynamic], and the docs read it back from the installed
 # package metadata. Bump here and nowhere else.
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 from .backends import (
     MathBackend,
