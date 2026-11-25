@@ -1,0 +1,105 @@
+# Paper Figs. 6-9: nonlinear single track.
+#
+# Run (from the repository root):
+#   uv run python simulations/main.py simulations/paper/fig06-09_nonlinear/config.yaml
+#
+# If you have an FE reference file (XDMF), you can compare it against the SG
+# solution at t = 12 ms (relative L2 and L_inf, FE as the reference):
+#   uv run python -m spectral_galerkin_heat.io_utils.compute_L2_error \
+#       path/to/fe_temperature.xdmf \
+#       out/<run_dir>/fields/field_step006000.xmf \
+#       --attr-a Temperature --attr-b temperature --no-error-output
+# The tool compares the last time step of each file.
+
+simulation:
+  name: "paper_fig06-09_nonlinear"
+  backend: "gpu"
+  duration:
+    value: 12.0e-3          # = 1.8 mm / 0.15 m/s
+    unit: "s"
+  dt:
+    value: 2.0e-6           # 6000 steps
+    unit: "s"
+  update_interval: 30
+  max_picard_iter: 50
+  picard_omega: 0.3
+  picard_tol: 1.0e-5
+
+domain:
+  size:
+    value: [2.0e-3, 1.0e-3, 0.5e-3]
+    unit: "m"
+  mesh:
+    value: [256, 128, 768]
+    unit: ""
+
+fine_mesh:
+  refinement: 1           # A refined box around the laser is an option,
+                          # set at 1 here, so no refinement.
+  box_size: [0.2e-3, 0.2e-3, 0.04e-3]
+
+material:
+  name: "316L (Chadwick, temperature-dependent)"
+  k:
+    solid: "9.248 + 0.01571*T"
+    liquid: "12.41 + 0.003279*T"
+    reference: 24.5075
+    unit: "W/(m.K)"
+  rho:
+    solid: "8084.2 - 0.42086*T - 3.8942e-5*T**2"
+    liquid: "7432.7 + 0.039338*T - 1.8007e-4*T**2"
+    reference: 7282.4145
+    unit: "kg/m^3"
+  Cp:
+    solid: "458.98 + 0.1328*T"
+    liquid: "769.86"
+    reference: 633.8752
+    unit: "J/(kg.K)"
+  L_f:
+    value: 2.677e5
+    unit: "J/kg"
+  T_solidus:
+    value: 1674.15
+    unit: "K"
+  T_liquidus:
+    value: 1697.15
+    unit: "K"
+  T0:
+    value: 293.0
+    unit: "K"
+  h_conv_bottom:
+    value: 3000.0
+    unit: "W/(m2.K)"
+  DeltaH_LV:
+    value: 7.416e6
+    unit: "J/kg"
+  R_v:
+    value: 150.774
+    unit: "J/(kg.K)"
+  Pa:
+    value: 101325.0
+    unit: "Pa"
+  T_boil:
+    value: 3090.0
+    unit: "K"
+
+laser:
+  radius:
+    value: 30.0e-6
+    unit: "m"
+  absorptivity: 0.30
+  power_nominal:
+    value: 24.0
+    unit: "W"
+  path:
+    type: "gcode"
+    file: "track.gcode"
+    initial_position: [0.0, 0.5]   # mm, laser start at x = 0
+
+io:
+  run_tag: "paper_fig06-09_nonlinear"
+  output_interval: 1000
+  outputs: [full_volume]
+  at_end: [full_volume, profiles]
+  profiles_locations:
+    - 'laser'

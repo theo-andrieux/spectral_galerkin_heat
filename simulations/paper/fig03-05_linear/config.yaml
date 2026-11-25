@@ -1,0 +1,58 @@
+# Paper Figs. 3-5: linear single track.
+#
+# Run (from the repository root):
+#   uv run python simulations/main.py simulations/paper/fig03-05_linear/config.yaml
+
+simulation:
+  name: "paper_fig03-05_linear"
+  backend: "cpu_linear"
+  duration:
+    value: 12.0e-3
+    unit: "s"
+  dt:
+    value: 2.0e-6          # 6000 steps
+    unit: "s"
+  picard_tol: 1.0e-5
+
+domain:
+  size:
+    value: [2.0e-3, 1.0e-3, 0.5e-3]
+    unit: "m"
+  mesh:
+    value: [256, 128, 512]
+    unit: ""
+
+material:
+  name: "316L (properties of Table 2 at 293 K)"
+  rho:
+    value: 7957.544888242
+    unit: "kg/m^3"
+  k:
+    value: 13.85103
+    unit: "W/(m.K)"
+  Cp:
+    value: 497.8904
+    unit: "J/(kg.K)"
+  T0:
+    value: 293.0
+    unit: "K"
+
+laser:
+  radius:
+    value: 30.0e-6
+    unit: "m"
+  absorptivity: 0.30
+  power_nominal:
+    value: 24.0
+    unit: "W"
+  path:
+    type: "gcode"
+    file: "track.gcode"
+    initial_position: [0.0, 0.5]   # mm, laser start
+
+io:
+  run_tag: "paper_fig03-05_linear"
+  output_interval: null
+  at_end: [full_volume, profiles]
+  profiles_locations:
+    - 'laser'
