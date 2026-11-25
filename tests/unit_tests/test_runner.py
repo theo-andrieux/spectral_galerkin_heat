@@ -61,11 +61,11 @@ def test_runner_defaults_io_manager():
     assert isinstance(r.heat_solver, _Solver)
 
 
-def test_run_executes_n_steps_plus_one_with_exact_time():
+def test_run_executes_n_steps_with_exact_time():
     solver, io = _Solver(), _IO()
     StandaloneHeatRunner(_ctx(n_steps=3), solver, io_manager=io).run()
-    assert len(solver.calls) == 4  # n_steps + 1
-    assert solver.calls == [i * 1e-6 for i in range(4)]  # t = step*dt, no drift
+    assert len(solver.calls) == 3  # state ends at t_end = n_steps * dt
+    assert solver.calls == [i * 1e-6 for i in range(3)]  # t = step*dt, no drift
 
 
 def test_run_io_lifecycle_order_and_finalize():

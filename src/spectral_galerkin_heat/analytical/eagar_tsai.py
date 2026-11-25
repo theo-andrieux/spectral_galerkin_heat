@@ -11,13 +11,40 @@ In the laser frame (xi = x - x_laser, eta = y - y_laser, depth d = Lz - z):
                         / [sqrt(tau) (4 alpha tau + sigma^2)]  d tau
 
 with sigma^2 = r_b^2 / 2, where r_b is the 1/e^2 beam radius used by the solver,
-``I(r) = 2 A P / (pi r_b^2) exp(-2 r^2 / r_b^2)``. 
+``I(r) = 2 A P / (pi r_b^2) exp(-2 r^2 / r_b^2)``.
 
-Time-stepped source. Passing the solver's ``dt`` here: the source emitting at 
+The integrand is a product of one factor per axis, so the insulated walls of
+the cuboid are imposed exactly by replacing each factor with its 1-D image
+series (reflections across both walls of that axis), truncated at
+``image_order`` reflections.
+
+Time-stepped source. Passing the solver's ``dt`` here: the source emitting at
 time t' sits where the laser was at the start of its step.
 """
 
 import numpy as np
+from scipy.special import erf
+
+
+def _axis_factor(X, s, L, D, c, sigma_sq, order, images, clip):
+    """In-plane factor of the kernel along one axis, with its image series.
+
+    ``X`` are the evaluation coordinates, ``s`` the source position, ``L`` the
+    domain length on this axis, ``D = c + sigma_sq`` with ``c = 4 alpha tau``.
+    With ``clip``, the Gaussian beam is restricted to ``[0, L]`` before imaging.
+    """
+    def term(Xe):
+        g = np.exp(-(Xe - s)**2 / D)
+        if clip:
+            mu = (s * c + Xe * sigma_sq) / D
+            w = np.sqrt(sigma_sq * c / D)
+            g = g * 0.5 * (erf((L - mu) / w) + erf(mu / w))
+        return g
+
+    if not images:
+        return term(X)
+    m = np.arange(-order, order + 1)[:, None]
+    return (term(X[None, :] - 2 * m * L) + term(2 * m * L - X[None, :])).sum(axis=0)
 
 
 def eagar_tsai_field(
@@ -43,6 +70,8 @@ def eagar_tsai_field(
     n_tau: int = 400,
     tau_min: float = 1e-10,
     images: bool = True,
+    image_order: int = 1,
+    clip_source: bool = False,
 ) -> np.ndarray:
     """Eagar-Tsai temperature field on the grid ``x, y, z``.
 
@@ -74,10 +103,16 @@ def eagar_tsai_field(
         Number of geometric quadrature points and lower cut-off of the tau
         integral.
     images : bool, default True
-        Add five image sources (reflections across x = 0, x = Lx, y = 0,
-        y = Ly and the bottom z = 0) so the field satisfies the insulated walls.
-        The heated top face needs no image. False returns the bare
-        semi-infinite solution.
+        Impose the insulated walls with image sources: on each axis, the
+        reflections across both walls up to ``image_order``, multiplied across
+        the three axes (edge and corner images included). The heated top face
+        is a wall of the z series. False returns the bare semi-infinite
+        solution.
+    image_order : int, default 1
+        Number of reflections kept on each side of each axis.
+    clip_source : bool, default False
+        Restrict the Gaussian beam to the top face ``[0, Lx] x [0, Ly]``, as
+        the solver does when the beam overlaps a side wall.
 
     Returns
     -------
@@ -89,49 +124,29 @@ def eagar_tsai_field(
     tau_pts = np.geomspace(tau_min, t_total, n_tau)
     dtau = np.diff(tau_pts)
 
-    xi = x - x_laser
-    eta = y - y_laser
     depth = Lz - z
-    eta_img_y0 = eta + 2 * y_laser
-    eta_img_yLy = eta - 2 * (Ly - y_laser)
-    depth_img_z0 = 2.0 * Lz - depth
-
     sigma_sq = r_b**2 / 2.0
     C = A * P / (np.pi * rho * Cp * np.sqrt(np.pi * alpha))
+    p = np.arange(-image_order, image_order + 1)[:, None] if images else np.zeros((1, 1))
 
     T_field = np.zeros((z.size, y.size, x.size))
-    buf = np.empty_like(T_field)
-
     for i in range(n_tau - 1):
         tau = 0.5 * (tau_pts[i] + tau_pts[i + 1])
-        denom_xy = 4.0 * alpha * tau + sigma_sq
-        denom_z = 4.0 * alpha * tau
-        scalar = dtau[i] / (np.sqrt(tau) * denom_xy)
+        c = 4.0 * alpha * tau
+        D = c + sigma_sq
 
         # Distance travelled by the laser since the source emitted: v * lag.
         # Continuous motion: lag = tau. Stepped: the emitting source sits at
         # its start-of-step position, so it lags the laser by more than tau.
         lag = tau if dt is None else t_total - dt * np.floor((t_total - tau) / dt)
-        exp_x = np.exp(-(xi + v * lag)**2 / denom_xy)
-        exp_y = np.exp(-eta**2 / denom_xy)
-        exp_z = np.exp(-depth**2 / denom_z)
-        f_xy = exp_y[:, None] * exp_x[None, :]
+        x_src = x_laser - v * lag
 
-        if images:
-            # Side walls. A reflection across an x wall reverses the velocity.
-            exp_x_img_x0 = np.exp(-(xi + 2 * x_laser - v * lag)**2 / denom_xy)
-            exp_x_img_xLx = np.exp(-(xi + 2 * x_laser - 2 * Lx - v * lag)**2 / denom_xy)
-            f_xy_side = (exp_y[:, None] * (exp_x_img_x0 + exp_x_img_xLx)[None, :]
-                         + (np.exp(-eta_img_y0**2 / denom_xy)
-                            + np.exp(-eta_img_yLy**2 / denom_xy))[:, None] * exp_x[None, :])
-            np.multiply(exp_z[:, None, None], (f_xy + f_xy_side)[None, :, :], out=buf)
-            # Bottom wall: same in-plane profile, mirrored depth.
-            exp_z_img = np.exp(-depth_img_z0**2 / denom_z)
-            buf += exp_z_img[:, None, None] * f_xy[None, :, :]
-        else:
-            np.multiply(exp_z[:, None, None], f_xy[None, :, :], out=buf)
+        fx = _axis_factor(x, x_src, Lx, D, c, sigma_sq, image_order, images, clip_source)
+        fy = _axis_factor(y, y_laser, Ly, D, c, sigma_sq, image_order, images, clip_source)
+        # Source on the top face: its images sit at depths 2 p Lz.
+        fz = np.exp(-(depth[None, :] + 2 * p * Lz)**2 / c).sum(axis=0)
 
-        buf *= scalar
-        T_field += buf
+        scalar = dtau[i] / (np.sqrt(tau) * D)
+        T_field += (scalar * fz)[:, None, None] * (fy[:, None] * fx[None, :])[None, :, :]
 
     return T_field * C + T0
