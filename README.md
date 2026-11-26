@@ -58,14 +58,14 @@ The [documentation](https://theo-andrieux.github.io/sgh-docs/) has a tutorial fo
 
 ## Installation details
 
-**Prerequisites:** Python 3.12 or newer, and [`uv`](https://github.com/astral-sh/uv) (recommended; plain `pip` also works). The GPU backend additionally needs an NVIDIA GPU with the CUDA 13.x toolkit installed system-wide; the CPU backend needs nothing extra.
+**Prerequisites:** Python 3.12 or newer, and [`uv`](https://github.com/astral-sh/uv) (recommended; plain `pip` also works). The GPU backend additionally needs an NVIDIA GPU (Turing or newer) and driver 580 or newer; the CUDA 13.x toolkit itself is installed from wheels, no system CUDA needed. The CPU backend needs nothing extra.
 
 `uv sync` installs the CPU core. Extras are added with `--group`:
 
 | Command | Adds |
 | --- | --- |
 | `uv sync` | CPU core (default; enough to run the examples) |
-| `uv sync --group gpu` | CuPy GPU backend *(requires system CUDA 13.x)* |
+| `uv sync --group gpu` | CuPy GPU backend *(needs NVIDIA driver >= 580)* |
 | `uv sync --group docs` | Sphinx toolchain to build the docs |
 | `uv sync --group dev` | Test and lint tooling (`pytest`, `ruff`) |
 | `uv sync --all-groups` | Everything above |
@@ -77,7 +77,7 @@ From the repository root, in an environment you manage yourself:
 
 ```bash
 python -m pip install -e .            # CPU core
-python -m pip install -e ".[gpu]"     # + GPU backend (needs system CUDA 13.x)
+python -m pip install -e ".[gpu]"     # + GPU backend (needs NVIDIA driver >= 580)
 python -m pip install -e ".[docs]"    # + docs toolchain
 ```
 </details>

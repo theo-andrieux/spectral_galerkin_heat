@@ -383,9 +383,9 @@ class SpectralSolver(HeatSolver):
         # ================================================================
         iter_k, true_rel_err, picard_converged = -1, float("nan"), False
         Q_latent_raw = Q_latent_modes = None   # defined even if the cap is 0
+        # a_old holds the current iterate; the relaxed update is written in place.
+        xp.copyto(a_old, buffers.a_temp)
         for iter_k in range(self.max_picard_iter):
-            xp.copyto(a_old, buffers.a_temp)
-
             T_surface = kernels.reconstruct_surface_temperature(a_old, SsState)
             kernels.compute_evaporation_flux(
                 T_surface, buffers.q_evap_buffer,
@@ -422,19 +422,20 @@ class SpectralSolver(HeatSolver):
                 Q_latent_modes = kernels.project_box_to_modes(Q_latent_raw, SsState)
             elif self._grid_latent:
                 T_full = kernels.reconstruct_volume(a_old, SsState)
-                buffers.Q_latent_buffer.fill(0.0)
                 kernels.compute_latent_heat_source_grid(
                     buffers.Q_latent_buffer, T_full, self._T_prev_full, mat, num, SsState
                 )
                 Q_latent_modes = kernels.project_volume(buffers.Q_latent_buffer, SsState)
 
-            kernels.update_modes_etd1(
-                SsState.a, SsState.KK, grid.Cp32_broadcast,
-                S_top_raw, buffers.a_temp,
-            )
             if Q_latent_modes is not None:
-                kernels.add_source_term_modes(
-                    buffers.a_temp, SsState.KK, Q_latent_modes,
+                kernels.update_modes_etd1_source(
+                    SsState.a, SsState.KK, grid.Cp32_broadcast,
+                    S_top_raw, Q_latent_modes, buffers.a_temp,
+                )
+            else:
+                kernels.update_modes_etd1(
+                    SsState.a, SsState.KK, grid.Cp32_broadcast,
+                    S_top_raw, buffers.a_temp,
                 )
             if S_bot_raw is not None:
                 kernels.add_bottom_surface_source(
@@ -445,27 +446,21 @@ class SpectralSolver(HeatSolver):
             # Temperature-dependent property correction: re-evaluated
             # from the current iterate, folded into the forcing before relaxation
             # so the fixed point resums the perturbation series to all orders.
+            C_corr = None
             if self._property_correction:
                 C_corr = kernels.assemble_property_correction(
                     SsState, buffers.a_temp, self._T_prev_full,
                     num.dt, mat.model, self._kbar, self._abar,
                 )
-                kernels.add_source_term_modes(buffers.a_temp, SsState.KK, C_corr)
 
-            # Under-relax in residual form: ω·a_raw + (1-ω)·a_old is identically
-            # a_old + ω·(a_raw - a_old), and the residual is already needed for the
-            # convergence test. Written this way the iteration needs neither a
-            # verbatim copy of a_temp nor a full-grid temporary for (1-ω)·a_old.
-            omega = self.mixing_omega
-            xp.subtract(buffers.a_temp, a_old, out=residual_curr)
-            xp.multiply(residual_curr, omega, out=buffers.a_temp)
-            buffers.a_temp += a_old
-
-            rms_diff = xp.sqrt(xp.vdot(residual_curr, residual_curr) / n_elements)
-            rms_old = xp.sqrt(xp.vdot(a_old, a_old) / n_elements)
-            # Form the ratio on the device so the convergence check costs a single
-            # host sync per Picard iteration instead of two.
-            true_rel_err = float(rms_diff / xp.maximum(rms_old, xp.asarray(1e-9, dtype=rms_old.dtype)))
+            # Under-relax in residual form, a_old += ω·(a_raw - a_old) with
+            # a_raw = a_temp + KK·C_corr, fused with the residual norms.
+            sum_res, sum_old = kernels.relax_modes(
+                buffers.a_temp, SsState.KK, C_corr, a_old, self.mixing_omega, residual_curr,
+            )
+            rms_diff = math.sqrt(sum_res / float(n_elements))
+            rms_old = math.sqrt(sum_old / float(n_elements))
+            true_rel_err = rms_diff / max(rms_old, 1e-9)
 
             if self.track_picard_history:
                 rho_k = None
@@ -498,7 +493,8 @@ class SpectralSolver(HeatSolver):
                     self.max_picard_iter, t, float(self.convergence_tol), true_rel_err,
                 )
 
-        # Restore variables needed below
+        # Converged iterate back into a_temp, which the code below reads.
+        xp.copyto(buffers.a_temp, a_old)
         T_temp = kernels.reconstruct_surface_temperature(buffers.a_temp, SsState)
         Q_latent = Q_latent_raw
         # Carry the latent modes into the next step's initial guess (grid mode;

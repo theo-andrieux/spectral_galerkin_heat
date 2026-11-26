@@ -11,7 +11,7 @@ Usage:
 import os
 import sys
 
-# This file lives in simulations/examples/; the repo root is two levels up.
+# This file lives in simulations/examples/; the root is two levels up.
 EXAMPLE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(EXAMPLE_DIR, "..", ".."))
 
@@ -63,79 +63,85 @@ config = {
     "io": {},   # empty: the IOManager is not used
 }
 
-# ---------------------------------------------------------------------------
-# 2. Build SimulationContext from the dictionary
-#    Passing config_dir lets the solver resolve the G-code path relative to
-#    this example's own paths/ folder, regardless of the current directory.
-# ---------------------------------------------------------------------------
-context = SimulationContext.from_dict(config, config_dir=EXAMPLE_DIR)
+def main():
+    # ---------------------------------------------------------------------------
+    # 2. Build SimulationContext from the dictionary
+    #    Passing config_dir lets the solver resolve the G-code path relative to
+    #    this example's own paths/ folder, regardless of the current directory.
+    # ---------------------------------------------------------------------------
+    context = SimulationContext.from_dict(config, config_dir=EXAMPLE_DIR)
 
-# ---------------------------------------------------------------------------
-# 2b. (Alternative) Drive the laser from Python instead of a G-code file
-#
-#     `laser.path` above builds a GCodeLaserPath for you. `LaserPath` is an
-#     abstract base class, so any object with a `get_state(time, dt)` returning
-#     a LaserState works just as well. Assign it to `context.laser_path` after
-#     building the context and it replaces whatever the config produced.
-#
-#     Positions are metres, power watts, velocity m/s. Set `is_on=False` (or
-#     power 0.0) once the laser should stop depositing energy.
-# ---------------------------------------------------------------------------
-#
-# from spectral_galerkin_heat.core.laser import LaserPath, LaserState
-#
-# class RasterLaser(LaserPath):
-#     """Back-and-forth scan along x, stepping over in y each pass."""
-#
-#     def __init__(self, x0, y0, vx, power, track_length, pitch):
-#         self.x0, self.y0 = x0, y0
-#         self.vx, self.power = vx, power
-#         self.track_length, self.pitch = track_length, pitch
-#
-#     def get_state(self, time, dt):
-#         pass_index, along = divmod(self.vx * time, self.track_length)
-#         pass_index = int(pass_index)
-#         forward = pass_index % 2 == 0
-#         x = self.x0 + (along if forward else self.track_length - along)
-#         y = self.y0 + pass_index * self.pitch
-#         vx = self.vx if forward else -self.vx
-#         return LaserState(x=x, y=y, power=self.power, is_on=True, v=(vx, 0.0))
-#
-# context.laser_path = RasterLaser(
-#     x0=0.2e-3, y0=0.2e-3, vx=0.5, power=200.0,
-#     track_length=0.6e-3, pitch=80e-6,
-# )
+    # ---------------------------------------------------------------------------
+    # 2b. (Alternative) Drive the laser from Python instead of a G-code file
+    #
+    #     `laser.path` above builds a GCodeLaserPath for you. `LaserPath` is an
+    #     abstract base class, so any object with a `get_state(time, dt)` returning
+    #     a LaserState works just as well. Assign it to `context.laser_path` after
+    #     building the context and it replaces whatever the config produced.
+    #
+    #     Positions are metres, power watts, velocity m/s. Set `is_on=False` (or
+    #     power 0.0) once the laser should stop depositing energy.
+    # ---------------------------------------------------------------------------
+    #
+    # from spectral_galerkin_heat.core.laser import LaserPath, LaserState
+    #
+    # class RasterLaser(LaserPath):
+    #     """Back-and-forth scan along x, stepping over in y each pass."""
+    #
+    #     def __init__(self, x0, y0, vx, power, track_length, pitch):
+    #         self.x0, self.y0 = x0, y0
+    #         self.vx, self.power = vx, power
+    #         self.track_length, self.pitch = track_length, pitch
+    #
+    #     def get_state(self, time, dt):
+    #         pass_index, along = divmod(self.vx * time, self.track_length)
+    #         pass_index = int(pass_index)
+    #         forward = pass_index % 2 == 0
+    #         x = self.x0 + (along if forward else self.track_length - along)
+    #         y = self.y0 + pass_index * self.pitch
+    #         vx = self.vx if forward else -self.vx
+    #         return LaserState(x=x, y=y, power=self.power, is_on=True, v=(vx, 0.0))
+    #
+    # context.laser_path = RasterLaser(
+    #     x0=0.2e-3, y0=0.2e-3, vx=0.5, power=200.0,
+    #     track_length=0.6e-3, pitch=80e-6,
+    # )
 
-# ---------------------------------------------------------------------------
-# 3. Instantiate and initialize the solver
-# ---------------------------------------------------------------------------
-from spectral_galerkin_heat.backends import NumpyBackend
-from spectral_galerkin_heat.solvers.spectral import SpectralSolver
+    # ---------------------------------------------------------------------------
+    # 3. Instantiate and initialize the solver
+    # ---------------------------------------------------------------------------
+    from spectral_galerkin_heat.backends import NumpyBackend
+    from spectral_galerkin_heat.solvers.spectral import SpectralSolver
 
-solver = SpectralSolver(NumpyBackend())  # use get_backend("cupy") for GPU
-state = solver.initialize(context)
+    solver = SpectralSolver(NumpyBackend())  # use get_backend("cupy") for GPU (see main guard below)
+    solver.initialize(context)  # returns the initial state; step() returns updated ones
 
-# ---------------------------------------------------------------------------
-# 4. Time loop
-# ---------------------------------------------------------------------------
-t = 0.0
-dt = context.num.dt
-t_end = context.num.t_end
+    # ---------------------------------------------------------------------------
+    # 4. Time loop
+    # ---------------------------------------------------------------------------
+    t = 0.0
+    dt = context.num.dt
+    t_end = context.num.t_end
 
-print(f"Running heat solver in library mode: t_end={t_end:.2e} s, dt={dt:.2e} s")
-print(f"Mesh: {context.geom.n.x} x {context.geom.n.y} x {context.geom.n.z}")
-print("-" * 60)
+    print(f"Running heat solver in library mode: t_end={t_end:.2e} s, dt={dt:.2e} s")
+    print(f"Mesh: {context.geom.n.x} x {context.geom.n.y} x {context.geom.n.z}")
+    print("-" * 60)
 
-step = 0
-while t < t_end:
-    state, metrics = solver.step(t, dt)
-    t += dt
-    step += 1
+    step = 0
+    while t < t_end:
+        _state, metrics = solver.step(t, dt)  # (solver state, diagnostics dict)
+        t += dt
+        step += 1
 
-    # Read diagnostics from the metrics dict returned by each step.
-    T_max = metrics.get("T_surface_max", float("nan"))
-    P_laser = metrics.get("P_laser", 0.0)
-    print(f"  step {step:>4d} | t = {t:.4e} s | T_max = {T_max:.1f} K | P_laser = {P_laser:.2f} W")
+        # Read diagnostics from the metrics dict returned by each step.
+        T_max = metrics.get("T_surface_max", float("nan"))
+        P_laser = metrics.get("P_laser", 0.0)
+        print(f"  step {step:>4d} | t = {t:.4e} s | T_max = {T_max:.1f} K | P_laser = {P_laser:.2f} W")
 
-print("-" * 60)
-print("Orchestrator finished: no files were written to disk.")
+    print("-" * 60)
+    print("Orchestrator finished: no files were written to disk.")
+
+
+# The guard is required for the GPU backend
+if __name__ == "__main__":
+    main()

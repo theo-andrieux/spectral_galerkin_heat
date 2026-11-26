@@ -18,6 +18,7 @@
 
 import numpy as np
 import scipy.fft
+from numba import get_num_threads
 
 from spectral_galerkin_heat.backends.base import to_host
 from spectral_galerkin_heat.physics import spectral_ops as _ops
@@ -201,7 +202,7 @@ def reconstruct_temperature_DCT(a, SsState):
 
     # 3-D DCT-I (type 1, unnormalised) -> node-centred values.
     T = scipy.fft.dctn(padded, type=1, norm=None, axes=(0, 1, 2),
-                        overwrite_x=True, workers=-1)
+                        overwrite_x=True, workers=get_num_threads())
 
     # Transpose (nz+1, ny+1, nx+1) -> (N_x+1, N_y+1, N_z+1).
     return np.ascontiguousarray(T.transpose(2, 1, 0), dtype=out_dtype)

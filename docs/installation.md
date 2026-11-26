@@ -8,8 +8,9 @@ spectral_galerkin_heat uses [uv](https://github.com/astral-sh/uv) to manage its 
 - **uv**: A fast Python package installer and resolver.
 
 *For GPU support (optional):*
-- **CUDA Toolkit**: Compatible with CuPy.
-- **NVIDIA Driver**: Matching your CUDA version.
+- **NVIDIA GPU**: Turing or newer.
+- **NVIDIA Driver**: 580 or newer.
+- The `gpu` extra installs the CUDA 13.x toolkit from wheels.
 
 ## Installing the Project
 
