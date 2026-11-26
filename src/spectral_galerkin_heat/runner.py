@@ -151,7 +151,7 @@ def initialize_run_logging(config: dict[str, Any], yaml_path: str, out_dir: str)
         f"Python Version   : {python_version}",
         f"OS               : {os_info}",
         f"CPU Model        : {cpu_model}",
-        f"Cores Allocated  : {cpu_count} available",
+        f"CPU Threads      : {sim.get('threads', 1)} of {cpu_count}",
         f"GPU Model        : {gpu_model}",
         "",
         "[FILES SAVED IN OUTPUT DIR]",

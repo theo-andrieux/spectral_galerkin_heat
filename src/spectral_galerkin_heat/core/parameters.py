@@ -125,6 +125,20 @@ def _get_vector(raw_val: Any, target_unit: str | None = None) -> list:
 _SUPPORTED_DTYPES = {"float32": np.float32, "float64": np.float64}
 
 
+def _parse_threads(value):
+    """``simulation.threads``: a positive integer, or ``"all"`` (-> None, every core)."""
+    if isinstance(value, str) and value.strip().lower() == "all":
+        return None
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"simulation.threads must be a positive integer or 'all', got {value!r}.") from None
+    if n < 1:
+        raise ValueError(f"simulation.threads must be >= 1 or 'all', got {n}.")
+    return n
+
+
 def _resolve_dtype(name):
     """Resolve a precision name (e.g. ``"float32"``) to a NumPy scalar type.
 
@@ -190,6 +204,11 @@ class NumParams:
     picard_omega : float, optional
         Under-relaxation (mixing) factor for the Picard loop. ``None`` (default)
         uses the solver default. Set via ``simulation.picard_omega``.
+    threads : int or None, optional
+        Number of CPU threads for the Numba kernels, the DCTs and BLAS, by
+        default 1. ``None`` uses every core. Set via
+        ``simulation.threads`` (an integer, or ``"all"`` for every core); see
+        :mod:`spectral_galerkin_heat.core.threads`.
     """
     dt: float
     nx: int
@@ -206,6 +225,7 @@ class NumParams:
     max_picard_iter: int | None = None
     picard_tol: float | None = None
     picard_omega: float | None = None
+    threads: int | None = 1
     dtype: Any = np.float32
 
 @dataclass
@@ -417,7 +437,7 @@ class FineMeshParams:
 _SECTION_KEYS = {
     "simulation": {
         "name", "backend", "dtype", "dt", "duration", "update_interval",
-        "max_picard_iter", "picard_tol", "picard_omega",
+        "max_picard_iter", "picard_tol", "picard_omega", "threads",
     },
     "domain": {"size", "mesh"},
     "material": {
@@ -563,6 +583,7 @@ class SimulationContext:
                         if sim_cfg.get('picard_tol') is not None else None),
             picard_omega=(float(sim_cfg['picard_omega'])
                           if sim_cfg.get('picard_omega') is not None else None),
+            threads=_parse_threads(sim_cfg.get('threads', 1)),
             dtype=real_t,
         )
 

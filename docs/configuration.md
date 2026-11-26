@@ -27,6 +27,8 @@ Declares the run and solver behavior.
 * **duration**: Total physical simulation time (`s`).
 * **dt**: Time step size (`s`).
 * **update_interval**: Steps between ETA prints to the terminal (`int`).
+* **threads** (optional): Number of CPU threads (`int`, or `"all"` for every core), shared by the
+  Numba kernels, the DCTs and BLAS. Default `1`.
 
 The following keys control the non-linear (temperature-dependent property) solve. They are only
 needed when the material properties are given as temperature-dependent branches (see `material`
