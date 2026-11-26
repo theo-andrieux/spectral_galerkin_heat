@@ -1,0 +1,17 @@
+# Paper Fig. 10: grids of the SG runtime sweep.
+
+config: config.yaml
+backends: [cpu]
+threads: 1
+grids:
+  - [8, 5, 12]
+  - [16, 10, 20]
+  - [32, 18, 30]
+  - [64, 32, 50]
+  - [96, 48, 80]
+  - [128, 72, 100]
+  - [192, 96, 160]
+  - [256, 160, 200]
+  - [384, 192, 300]
+reference: [384, 192, 300]
+out: out/paper_fig10_sg_runtime

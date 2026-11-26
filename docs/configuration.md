@@ -70,9 +70,10 @@ Optional; controls where the latent-heat source is evaluated (relevant only when
 
 Box-mode keys:
 
-* **refinement**: Fine cells per coarse cell, per axis (`int`, default `4`). The fine spacing is
+* **refinement**: Fine cells per coarse cell, per axis (`int`, default `1`). The fine spacing is
   the coarse spacing divided by this factor.
-* **box_size**: Extent `[Lx, Ly, Lz]` of the box in metres (default `[0.9e-3, 0.9e-3, 0.04e-3]`).
+* **box_size**: Extent `[Lx, Ly, Lz]` of the box in metres, as a plain list or the `{value, unit}`
+  mapping form (default `[0.9e-3, 0.9e-3, 0.04e-3]`).
   The x/y extents form a window that tracks the laser; the z extent is the near-surface depth.
 
 In box mode the box must enclose the melt pool: the latent-heat source is projected onto the

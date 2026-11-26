@@ -1,5 +1,8 @@
 # Paper Figs. 3-5: linear single track.
 #
+# The paper used an early version of the code; results may differ slightly,
+# and runtimes depend on the machine.
+#
 # Run (from the repository root):
 #   uv run python simulations/main.py simulations/paper/fig03-05_linear/config.yaml
 

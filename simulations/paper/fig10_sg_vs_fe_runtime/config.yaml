@@ -1,11 +1,16 @@
 # Paper Fig. 10: SG runtime and error vs number of DoF.
 #
+# The paper used an early version of the code; results may differ slightly,
+# and runtimes depend on the machine.
+#
 # Run (from the repository root):
 #   uv run python simulations/paper/sweep.py simulations/paper/fig10_sg_vs_fe_runtime/sweep.yaml
 
 simulation:
   name: "paper_fig10_sg_runtime"
   backend: "cpu"
+  dtype: "float64"
+  threads: 1            
   duration:
     value: 1.0e-3
     unit: "s"
@@ -13,9 +18,9 @@ simulation:
     value: 2.0e-6           # 500 steps
     unit: "s"
   update_interval: 30
-  max_picard_iter: 50
+  max_picard_iter: 150
   picard_omega: 0.1
-  picard_tol: 1.0e-4
+  picard_tol: 1.0e-5
 
 domain:
   size:
