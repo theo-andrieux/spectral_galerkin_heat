@@ -208,11 +208,22 @@ def test_epsilon_in_safe_regime(constant_velocity_laser):
 
 _TDEP_FINE = {"refinement": 2, "box_size": [0.4e-3, 0.3e-3, 0.06e-3]}
 
+_CMP_MESH = (96, 48, 32)
+_T_HOT = 3000.0     # the comparison must cover the evaporation-dominated regime
 
-def _tdep_run(backend, dtype, laser, n_steps=6, cap=80):
+
+def _assert_all_steps_converged(picard, cap, label):
+    """Every step met the Picard tolerance (a step at the cap bailed unconverged)."""
+    stalled = [k for k, n in enumerate(picard) if n >= cap]
+    assert not stalled, (
+        f"{label}: steps {stalled} hit the Picard cap ({cap}) unconverged; "
+        f"the field comparison would be meaningless")
+
+
+def _tdep_run(backend, dtype, laser, n_steps=6, cap=80, mesh=(48, 24, 32)):
     """Run a T-dependent case at one precision; return (solver, T, picard).
     """
-    cfg = _cfg(_base_material(k=_K_BR, rho=_RHO_BR, Cp=_CP_BR),
+    cfg = _cfg(_base_material(k=_K_BR, rho=_RHO_BR, Cp=_CP_BR), mesh=mesh,
                n_steps=n_steps, backend=backend, fine=_TDEP_FINE, dtype=dtype)
     solver, T, _surf_max, picard = _run(_context(cfg, laser), max_picard_iter=cap)
     assert solver._property_correction is True
@@ -251,12 +262,12 @@ def test_tdep_cpu_float64_matches_float32(constant_velocity_laser):
     excursion.
     """
     laser = constant_velocity_laser(_X_START, _LY / 2, _V, 0.0, _P)
-    s32, T32, p32 = _tdep_run("cpu", "float32", laser, n_steps=20)
-    s64, T64, p64 = _tdep_run("cpu", "float64", laser, n_steps=20)
+    s32, T32, p32 = _tdep_run("cpu", "float32", laser, n_steps=20, mesh=_CMP_MESH)
+    s64, T64, p64 = _tdep_run("cpu", "float64", laser, n_steps=20, mesh=_CMP_MESH)
 
-    assert p32[-1] < s32.max_picard_iter and p64[-1] < s64.max_picard_iter, (
-        f"a run bailed at the Picard cap (f32={p32[-1]}, f64={p64[-1]}, "
-        f"cap={s32.max_picard_iter}); the comparison below would be meaningless")
+    _assert_all_steps_converged(p32, s32.max_picard_iter, "float32")
+    _assert_all_steps_converged(p64, s64.max_picard_iter, "float64")
+    assert float(T64.max()) > _T_HOT, "the run never reached the evaporation regime"
 
     assert T32.shape == T64.shape
     excursion = float(T64.max()) - _T0
@@ -308,12 +319,13 @@ def test_tdep_cpu_gpu_float64_equivalence(constant_velocity_laser):
         pytest.skip("CuPy not available or no CUDA device found")
 
     laser = constant_velocity_laser(_X_START, _LY / 2, _V, 0.0, _P)
-    s_cpu, T_cpu, p_cpu = _tdep_run("cpu", "float64", laser, n_steps=20)
-    s_gpu, T_gpu, p_gpu = _tdep_run("gpu", "float64", laser, n_steps=20)
+    s_cpu, T_cpu, p_cpu = _tdep_run("cpu", "float64", laser, n_steps=20, mesh=_CMP_MESH)
+    s_gpu, T_gpu, p_gpu = _tdep_run("gpu", "float64", laser, n_steps=20, mesh=_CMP_MESH)
     T_gpu = cupy.asnumpy(T_gpu) if hasattr(T_gpu, "get") else T_gpu
 
-    assert p_cpu[-1] < s_cpu.max_picard_iter and p_gpu[-1] < s_gpu.max_picard_iter, (
-        f"a run bailed at the Picard cap (cpu={p_cpu[-1]}, gpu={p_gpu[-1]})")
+    _assert_all_steps_converged(p_cpu, s_cpu.max_picard_iter, "cpu")
+    _assert_all_steps_converged(p_gpu, s_gpu.max_picard_iter, "gpu")
+    assert float(T_cpu.max()) > _T_HOT, "the run never reached the evaporation regime"
     assert T_cpu.shape == T_gpu.shape
     excursion = float(T_cpu.max()) - _T0
     max_abs_diff = float(np.max(np.abs(T_gpu - T_cpu)))

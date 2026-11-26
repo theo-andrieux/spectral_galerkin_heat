@@ -1,0 +1,91 @@
+# Paper Fig. 11: SG runtime on CPU and GPU vs grid size.
+#
+# The paper used an early version of the code; results may differ slightly,
+# and runtimes depend on the machine.
+#
+# Run (from the repository root):
+#   uv run python simulations/paper/sweep.py simulations/paper/fig11_cpu_vs_gpu/sweep.yaml
+
+simulation:
+  name: "paper_fig11_cpu_vs_gpu"
+  backend: "gpu"
+  threads: "all"           # CPU curve uses every core (multi-core comparison)
+  duration:
+    value: 1.0e-3
+    unit: "s"
+  dt:
+    value: 2.0e-6           # 500 steps
+    unit: "s"
+  update_interval: 30
+  max_picard_iter: 150
+  picard_omega: 0.1
+  picard_tol: 1.0e-5
+
+domain:
+  size:
+    value: [0.5e-3, 0.25e-3, 0.125e-3]
+    unit: "m"
+  mesh:
+    value: [256, 128, 128]
+    unit: ""
+
+
+material:
+  name: "316L (Chadwick, temperature-dependent)"
+  k:
+    solid: "9.248 + 0.01571*T"
+    liquid: "12.41 + 0.003279*T"
+    reference: 24.6858
+    unit: "W/(m.K)"
+  rho:
+    solid: "8084.2 - 0.42086*T - 3.8942e-5*T**2"
+    liquid: "7432.7 + 0.039338*T - 1.8007e-4*T**2"
+    reference: 6896.24
+    unit: "kg/m^3"
+  Cp:
+    solid: "458.98 + 0.1328*T"
+    liquid: "769.86"
+    reference: 633.875
+    unit: "J/(kg.K)"
+  L_f:
+    value: 2.677e5
+    unit: "J/kg"
+  T_solidus:
+    value: 1674.15
+    unit: "K"
+  T_liquidus:
+    value: 1697.15
+    unit: "K"
+  T0:
+    value: 293.0
+    unit: "K"
+  DeltaH_LV:
+    value: 7.416e6
+    unit: "J/kg"
+  R_v:
+    value: 150.774
+    unit: "J/(kg.K)"
+  Pa:
+    value: 101325.0
+    unit: "Pa"
+  T_boil:
+    value: 3090.0
+    unit: "K"
+
+laser:
+  radius:
+    value: 30.0e-6
+    unit: "m"
+  absorptivity: 0.30
+  power_nominal:
+    value: 24.0
+    unit: "W"
+  path:
+    type: "gcode"
+    file: "track.gcode"
+    initial_position: [0.125, 0.125]   # mm, laser start
+
+io:
+  run_tag: "paper_fig11_cpu_vs_gpu"
+  output_interval: null
+  at_end: [full_volume]

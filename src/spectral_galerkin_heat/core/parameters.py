@@ -101,8 +101,8 @@ def _get_value(raw_val: Any, target_unit: str | None = None) -> float:
 def _get_vector(raw_val: Any, target_unit: str | None = None) -> list:
     """Extract a list of numbers from a config field, with unit conversion.
 
-    Vector fields (``domain.size``, ``domain.mesh``) carry the sequence under
-    the ``value`` key of a ``{value, unit}`` mapping, so the mapping must be
+    Vector fields (``domain.size``, ``domain.mesh``, ``fine_mesh.box_size``)
+    carry the sequence under the ``value`` key of a ``{value, unit}`` mapping, so the mapping must be
     unwrapped before the elements are converted; a bare sequence is also
     accepted. Returns floats -- integer fields are cast by the caller.
     """
@@ -419,13 +419,13 @@ class FineMeshParams:
     ----------
     refinement : int
         Per-axis cell-refinement factor of the fine mesh relative to the global
-        spectral grid (fine spacing ``= geom.d / refinement``), by default 4.
+        spectral grid (fine spacing ``= geom.d / refinement``), by default 1.
     box_size : Vec3
         Extent of the refined, laser-following sub-box in metres ``(Lx_box, Ly_box, Lz_box)``: the
         x/y extents span the laser footprint, the z extent is the near-surface
         depth. By default ``Vec3(0.9e-3, 0.9e-3, 0.04e-3)``.
     """
-    refinement: int = 4
+    refinement: int = 1
     # Vec3 is frozen and slotted, so one shared default instance is safe.
     box_size: Vec3 = Vec3(0.9e-3, 0.9e-3, 0.04e-3)  # noqa: RUF009
 
@@ -597,11 +597,10 @@ class SimulationContext:
             fine_params = None
         else:
             default_box = (0.9e-3, 0.9e-3, 0.04e-3)
-            box_val = fine_cfg.get('box_size', default_box)
-            box_size_m = [float(_get_value(v, "m")) for v in box_val]
+            box_size_m = _get_vector(fine_cfg.get('box_size', default_box), "m")
             
             fine_params = FineMeshParams(
-                refinement=int(_get_value(fine_cfg.get('refinement', 4))),
+                refinement=int(_get_value(fine_cfg.get('refinement', 1))),
                 box_size=Vec3(box_size_m[0], box_size_m[1], box_size_m[2]),
             )
 
