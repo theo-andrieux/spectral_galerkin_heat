@@ -1,7 +1,7 @@
 # Paper Fig. 12: SmartScan case study (Ramani et al., 2022), linear.
 #
-# The paper used an early version of the code; results may differ slightly,
-# and runtimes depend on the machine.
+# Depending on the version of the code, results may differ slightly. Runtimes
+# depend on the machine; the hardware used for each run is reported in the paper.
 #
 # Run (from the repository root):
 #   uv run python simulations/paper/run_smartscan.py simulations/paper/fig12_smartscan_linear/config.yaml

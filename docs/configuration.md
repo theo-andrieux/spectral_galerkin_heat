@@ -2,7 +2,7 @@
 
 Simulations are configured with YAML files that map the physical properties and runtime
 settings. Example configurations live under `simulations/examples/`; this page mirrors
-{download}`02_single_track.yaml <../simulations/examples/02_single_track.yaml>`. For a
+{download}`02_single_scan.yaml <../simulations/examples/02_single_scan.yaml>`. For a
 walkthrough of the examples, see {doc}`examples`.
 
 :::{note}

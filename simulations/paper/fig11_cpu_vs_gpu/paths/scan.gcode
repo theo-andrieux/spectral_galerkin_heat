@@ -1,4 +1,4 @@
-; Paper Fig. 10: single track, 24 W, 0.15 m/s.
+; Paper Fig. 11: single scan, 24 W, 0.15 m/s.
 G21
 G0 X0.2500 Y0.2500
 M3 S24.0

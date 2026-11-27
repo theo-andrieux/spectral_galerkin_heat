@@ -1,7 +1,7 @@
-# Paper Figs. 3-5: linear single track.
+# Paper Figs. 3-5: linear single scan.
 #
-# The paper used an early version of the code; results may differ slightly,
-# and runtimes depend on the machine.
+# Depending on the version of the code, results may differ slightly. Runtimes
+# depend on the machine; the hardware used for each run is reported in the paper.
 #
 # Run (from the repository root):
 #   uv run python simulations/main.py simulations/paper/fig03-05_linear/config.yaml
@@ -50,7 +50,7 @@ laser:
     unit: "W"
   path:
     type: "gcode"
-    file: "track.gcode"
+    file: "scan.gcode"
     initial_position: [0.0, 0.5]   # mm, laser start
 
 io:

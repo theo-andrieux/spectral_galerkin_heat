@@ -32,7 +32,7 @@ OUT_DIR = OUT_ROOT / "paper_fig03-05_references"
 
 
 def load_case():
-    """Physical parameters, time step and laser track of the SG run."""
+    """Physical parameters, time step and laser path of the SG run."""
     with open(CONFIG) as f:
         cfg = yaml.safe_load(f)
     ctx = SimulationContext.from_dict(cfg, config_dir=str(HERE))

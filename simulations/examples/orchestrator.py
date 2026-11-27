@@ -57,7 +57,7 @@ config = {
         "power_nominal": 200.0,
         "path": {
             "type": "gcode",
-            "file": "linear_track.gcode",   # resolved from <config_dir>/paths/ (see below)
+            "file": "linear_scan.gcode",   # resolved from <config_dir>/paths/ (see below)
         },
     },
     "io": {},   # empty: the IOManager is not used

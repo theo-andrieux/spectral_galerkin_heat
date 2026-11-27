@@ -1,4 +1,4 @@
-; Paper Figs. 6-9: single track, 24 W, 0.15 m/s.
+; Paper Figs. 6-9: single scan, 24 W, 0.15 m/s.
 G21
 G0 X0.000000 Y0.5000
 M3 S24.0

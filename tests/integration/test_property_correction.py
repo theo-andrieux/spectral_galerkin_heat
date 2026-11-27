@@ -177,7 +177,7 @@ def test_epsilon_in_safe_regime(constant_velocity_laser):
     """The controlling parameter ε stays modest, so the series converges."""
     from spectral_galerkin_heat.physics.spectral_ops import reconstruct_volume
 
-    # This short track stays cold in the bulk, so the reference that keeps the
+    # This short scan stays cold in the bulk, so the reference that keeps the
     # fluctuation k'=k(T)-k̄ modest is the cold-side value k(T0) (= the 316L solid
     # branch at 293 K), not the [T0, T_boil] mid-range. Reference the branches at
     # T0 to exercise the safe-regime guardrail.

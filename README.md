@@ -8,14 +8,14 @@
 [![Docs](https://img.shields.io/badge/docs-sgh--docs-blue.svg)](https://theo-andrieux.github.io/sgh-docs/)
 
 <p align="center">
-  <img src="docs/_images/sg_track.gif" width="640" alt="Laser scan simulated with the spectral Galerkin solver: melt pool moving along the track, with the computation clock and temperature scale">
+  <img src="docs/_images/sg_scan.gif" width="640" alt="Laser scan simulated with the spectral Galerkin solver: melt pool moving along the scan path, with the computation clock and temperature scale">
   <br>
   <em>A laser scan simulated with spectral_galerkin_heat; the clock shows the computation time on one GPU.</em>
 </p>
 
 On a single-pass laser scan, the solver stays within 0.67% (relative L² error) of a high-fidelity finite element reference. On one CPU core it runs 6.2 times faster than the finite element model while using about ten times more degrees of freedom, and 227 times faster on a GPU. Temperature-dependent properties, latent heat, evaporation and surface fluxes are all included.
 
-Videos: [spectral Galerkin vs finite elements on the same clock](https://youtube.com/shorts/5TWUQ5sRDSw) · [part-scale scan of a 6 × 6 cm plate, 2,500 tracks](https://youtube.com/shorts/GVgByfCcPyE)
+Videos: [spectral Galerkin vs finite elements on the same clock](https://youtube.com/shorts/5TWUQ5sRDSw) · [part-scale scan of a 6 × 6 cm plate, 2,500 scan lines](https://youtube.com/shorts/GVgByfCcPyE)
 
 ## What it does
 
@@ -49,8 +49,8 @@ The solver runs either from the command line (`simulations/main.py` with a `.yam
 
 | Example | What it shows |
 | --- | --- |
-| [`01_quickstart.yaml`](simulations/examples/01_quickstart.yaml) | Single laser track on a 316L cuboid, constant properties, evaporation only. Runs in seconds. |
-| [`02_single_track.yaml`](simulations/examples/02_single_track.yaml) | Same track with latent heat of fusion and surface convection switched on. |
+| [`01_quickstart.yaml`](simulations/examples/01_quickstart.yaml) | Single laser scan on a 316L cuboid, constant properties, evaporation only. Runs in seconds. |
+| [`02_single_scan.yaml`](simulations/examples/02_single_scan.yaml) | Same scan with latent heat of fusion and surface convection switched on. |
 | [`03_nonlinear_tdep.yaml`](simulations/examples/03_nonlinear_tdep.yaml) | Temperature-dependent properties: Picard iteration with a global property correction. |
 | [`orchestrator.py`](simulations/examples/orchestrator.py) | Library mode: build a `SimulationContext` from a Python dictionary and call `solver.step(...)` directly. |
 

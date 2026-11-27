@@ -18,14 +18,14 @@ def _load_main():
 
 def _write_case(tmp_path):
     (tmp_path / "paths").mkdir()
-    (tmp_path / "paths" / "track.gcode").write_text(
+    (tmp_path / "paths" / "scan.gcode").write_text(
         "G21\nG0 X0.1 Y0.1\nM3 S50.0\nG1 X0.3 Y0.1 F6000.0\n")
     cfg = {
         "simulation": {"backend": "cpu_linear", "duration": 2e-5, "dt": 2e-6},
         "domain": {"size": [4e-4, 2e-4, 1e-4], "mesh": [16, 8, 8]},
         "material": {"name": "316L", "rho": 7957.5, "k": 13.851, "Cp": 497.89, "T0": 293.0},
         "laser": {"radius": 30e-6, "absorptivity": 0.3, "power_nominal": 50.0,
-                  "path": {"type": "gcode", "file": "track.gcode",
+                  "path": {"type": "gcode", "file": "scan.gcode",
                            "initial_position": [0.1, 0.1]}},
         "io": {"output_root": str(tmp_path / "out"), "run_tag": "cli",
                "output_interval": None, "at_end": ["full_volume"]},

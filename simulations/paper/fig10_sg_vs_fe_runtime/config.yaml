@@ -1,7 +1,7 @@
 # Paper Fig. 10: SG runtime and error vs number of DoF.
 #
-# The paper used an early version of the code; results may differ slightly,
-# and runtimes depend on the machine.
+# Depending on the version of the code, results may differ slightly. Runtimes
+# depend on the machine; the hardware used for each run is reported in the paper.
 #
 # Run (from the repository root):
 #   uv run python simulations/paper/sweep.py simulations/paper/fig10_sg_vs_fe_runtime/sweep.yaml
@@ -41,12 +41,12 @@ material:
   rho:
     solid: "8084.2 - 0.42086*T - 3.8942e-5*T**2"
     liquid: "7432.7 + 0.039338*T - 1.8007e-4*T**2"
-    reference: 6896.24
+    reference: 6896.2365
     unit: "kg/m^3"
   Cp:
     solid: "458.98 + 0.1328*T"
     liquid: "769.86"
-    reference: 633.875
+    reference: 633.8752
     unit: "J/(kg.K)"
   L_f:
     value: 2.677e5
@@ -60,6 +60,9 @@ material:
   T0:
     value: 293.0
     unit: "K"
+  h_conv_bottom:
+    value: 3000.0
+    unit: "W/(m2.K)"
   DeltaH_LV:
     value: 7.416e6
     unit: "J/kg"
@@ -83,7 +86,7 @@ laser:
     unit: "W"
   path:
     type: "gcode"
-    file: "track.gcode"
+    file: "scan.gcode"
     initial_position: [0.25, 0.25]   # mm, laser start
 
 io:

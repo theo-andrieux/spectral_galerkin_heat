@@ -48,7 +48,7 @@ The laser trajectory is a G-code file under `simulations/examples/paths/`, selec
 | `M3 S<p>` / `M5` | laser on at power `<p>` watts / laser off |
 | `G1 X.. Y.. F<f>` | linear move at feedrate `<f>` (mm/min); sets the scan speed |
 
-The quickstart path is a single track scanned at 0.8 m/s with a 200 W beam:
+The quickstart path is a single scan scanned at 0.8 m/s with a 200 W beam:
 
 ```gcode
 G21 ; mm
@@ -65,8 +65,8 @@ several `G0`/`G1` moves.
 (example-quickstart)=
 ## 1. Quickstart
 
-{download}`01_quickstart.yaml <../simulations/examples/01_quickstart.yaml>` scans a single laser
-track over a coarse cuboid with constant material properties. Latent heat and surface convection
+{download}`01_quickstart.yaml <../simulations/examples/01_quickstart.yaml>` performs a single laser
+scan over a coarse cuboid with constant material properties. Latent heat and surface convection
 are disabled, leaving evaporative cooling as the only non-linear surface flux. The run takes
 about a minute on one CPU core. Its YAML is annotated field by field and serves as the
 configuration reference.
@@ -90,10 +90,10 @@ Longitudinal ($xz$, normal $y$) section through the laser spot at the end of the
 contour marks the solidus/liquidus.
 ```
 
-(example-single-track)=
-## 2. Single track with latent heat
+(example-single-scan)=
+## 2. Single scan with latent heat
 
-{download}`02_single_track.yaml <../simulations/examples/02_single_track.yaml>` adds the two
+{download}`02_single_scan.yaml <../simulations/examples/02_single_scan.yaml>` adds the two
 effects that example 1 omits: latent heat of fusion (`L_f`) and bottom-face convection
 (`h_conv_bottom`).
 Properties remain constant, obtained by evaluating the temperature-dependent 316L polynomials at
@@ -109,14 +109,14 @@ solid and liquid branches) are taken from Chadwick et al., *Acta Materialia* **2
 
 
 ```bash
-uv run python simulations/main.py simulations/examples/02_single_track.yaml
+uv run python simulations/main.py simulations/examples/02_single_scan.yaml
 ```
 
 ```{figure} _images/example_02_meltpool.png
 :alt: Longitudinal melt-pool section, example 02
 :width: 100%
 
-Melt-pool section for the single track. The two red contours are the solidus and liquidus.
+Melt-pool section for the single scan. The two red contours are the solidus and liquidus.
 ```
 
 (example-nonlinear)=
@@ -187,7 +187,7 @@ config = {
     "domain": {"size": [0.01, 0.005, 0.0025], "mesh": [64, 32, 16]},
     "material": {"rho": 7957.5, "k": 13.851, "Cp": 497.89, "name": "316L"},  # reference 316L values
     "laser": {"radius": 60.0e-6, "absorptivity": 0.30, "power_nominal": 200.0,
-              "path": {"type": "gcode", "file": "linear_track.gcode"}},
+              "path": {"type": "gcode", "file": "linear_scan.gcode"}},
     "io": {},   # empty: the IOManager is not used
 }
 
