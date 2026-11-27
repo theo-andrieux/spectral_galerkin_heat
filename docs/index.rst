@@ -35,6 +35,7 @@ to within 0.67% in relative :math:`L^2` error (see :doc:`validation`).
    configuration
    outputs
    examples
+   paper
 
 .. toctree::
    :maxdepth: 2

@@ -1,4 +1,4 @@
-; Example 03 laser track (small box).
+; Example 03 laser scan (small box).
 ; Starts inside the domain (X = 0.2 mm) so the melt pool sits away from the walls,
 ; which makes the longitudinal (x-z) melt-pool section render cleanly.
 ; v_scan = 0.15 m/s = 9000 mm/min; y held at the domain centre (Ly/2 = 0.15 mm).

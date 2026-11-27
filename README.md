@@ -8,7 +8,7 @@
 [![Docs](https://img.shields.io/badge/docs-sgh--docs-blue.svg)](https://theo-andrieux.github.io/sgh-docs/)
 
 <p align="center">
-  <img src="docs/_images/sg_track.gif" width="640" alt="Laser scan simulated with the spectral Galerkin solver: melt pool moving along the track, with the computation clock and temperature scale">
+  <img src="docs/_images/sg_scan.gif" width="640" alt="Laser scan simulated with the spectral Galerkin solver: melt pool moving along the scan path, with the computation clock and temperature scale">
   <br>
   <em>A laser scan simulated with spectral_galerkin_heat; the clock shows the computation time on one GPU.</em>
 </p>
@@ -47,8 +47,8 @@ The solver runs either from the command line (`simulations/main.py` with a `.yam
 
 | Example | What it shows |
 | --- | --- |
-| [`01_quickstart.yaml`](simulations/examples/01_quickstart.yaml) | Single laser track on a 316L cuboid, constant properties, evaporation only. Runs in seconds. |
-| [`02_single_track.yaml`](simulations/examples/02_single_track.yaml) | Same track with latent heat of fusion and surface convection switched on. |
+| [`01_quickstart.yaml`](simulations/examples/01_quickstart.yaml) | Single laser scan on a 316L cuboid, constant properties, evaporation only. Runs in seconds. |
+| [`02_single_scan.yaml`](simulations/examples/02_single_scan.yaml) | Same scan with latent heat of fusion and surface convection switched on. |
 | [`03_nonlinear_tdep.yaml`](simulations/examples/03_nonlinear_tdep.yaml) | Temperature-dependent properties: Picard iteration with a global property correction. |
 | [`orchestrator.py`](simulations/examples/orchestrator.py) | Library mode: build a `SimulationContext` from a Python dictionary and call `solver.step(...)` directly. |
 
@@ -56,14 +56,14 @@ The [documentation](https://theo-andrieux.github.io/sgh-docs/) has a tutorial fo
 
 ## Installation details
 
-**Prerequisites:** Python 3.12 or newer, and [`uv`](https://github.com/astral-sh/uv) (recommended; plain `pip` also works). The GPU backend additionally needs an NVIDIA GPU with the CUDA 13.x toolkit installed system-wide; the CPU backend needs nothing extra.
+**Prerequisites:** Python 3.12 or newer, and [`uv`](https://github.com/astral-sh/uv) (recommended; plain `pip` also works). The GPU backend additionally needs an NVIDIA GPU (Turing or newer) and driver 580 or newer; the CUDA 13.x toolkit itself is installed from wheels, no system CUDA needed. The CPU backend needs nothing extra.
 
 `uv sync` installs the CPU core. Extras are added with `--group`:
 
 | Command | Adds |
 | --- | --- |
 | `uv sync` | CPU core (default; enough to run the examples) |
-| `uv sync --group gpu` | CuPy GPU backend *(requires system CUDA 13.x)* |
+| `uv sync --group gpu` | CuPy GPU backend *(needs NVIDIA driver >= 580)* |
 | `uv sync --group docs` | Sphinx toolchain to build the docs |
 | `uv sync --group dev` | Test and lint tooling (`pytest`, `ruff`) |
 | `uv sync --all-groups` | Everything above |
@@ -75,7 +75,7 @@ From the repository root, in an environment you manage yourself:
 
 ```bash
 python -m pip install -e .            # CPU core
-python -m pip install -e ".[gpu]"     # + GPU backend (needs system CUDA 13.x)
+python -m pip install -e ".[gpu]"     # + GPU backend (needs NVIDIA driver >= 580)
 python -m pip install -e ".[docs]"    # + docs toolchain
 ```
 </details>

@@ -170,7 +170,7 @@ class FineMeshState:
     :meth:`__init__`. The annotated declarations document the schema and
     default the late-set ``T_prev`` / ``Q_prev`` to ``None``.
     """
-    refinement: int = 4
+    refinement: int = 1
     nx_box: int = 0
     ny_box: int = 0
     nz_box: int = 0

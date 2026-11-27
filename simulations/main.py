@@ -53,6 +53,8 @@ def main():
     parser.add_argument("--backend", default=None, choices=["cpu", "gpu", "cpu_linear"], help="Override backend (cpu/gpu/cpu_linear)")
     parser.add_argument("--viz", action="store_true", help="Force visualization after simulation")
     parser.add_argument("--no-viz", action="store_true", help="Disable automatic visualization")
+    parser.add_argument("--profile", action="store_true",
+                        help="Profile the run with cProfile; report in <run_dir>/diagnostics/profiler.txt")
     args = parser.parse_args()
 
     # 1. Load Config & Context
@@ -109,6 +111,7 @@ def main():
 
         # 4. Run Simulation
         workflow.run()
+        run_dir = workflow.io_manager.base_dir
 
     except Exception as e:
         # Check if this is a GPU out-of-memory error - fallback to CPU
@@ -126,6 +129,7 @@ def main():
                 solver = build_solver(context)
                 workflow = StandaloneHeatRunner(context, solver, config=config, yaml_path=yaml_path)
                 workflow.run()
+                run_dir = workflow.io_manager.base_dir
             except Exception:
                 logger.exception("Simulation failed on CPU fallback")
                 sys.exit(1)
@@ -167,38 +171,30 @@ def main():
         else:
              logger.warning("Output directory not found or IOManager not active. Visualization skipped.")
 
+    return run_dir
 
-if __name__ == "__main__":
+
+def main_profiled():
+    """Run :func:`main` under cProfile; top 40 functions to <run_dir>/diagnostics/profiler.txt."""
     import cProfile
     import pstats
+
     profiler = cProfile.Profile()
-    profiler.enable()
-    main()
-    profiler.disable()
-    # Try to write profiler output to diagnostics if possible
-    try:
-        # run_dir is set in main() as a global variable
-        run_dir = None
-        # Try to get run_dir from the main function's local scope
-        import inspect
-        frame = inspect.currentframe()
-        while frame:
-            if 'run_dir' in frame.f_locals:
-                run_dir = frame.f_locals['run_dir']
-                break
-            frame = frame.f_back
-        if run_dir and os.path.exists(run_dir):
-            diag_dir = os.path.join(run_dir, "diagnostics")
-            os.makedirs(diag_dir, exist_ok=True)
-            prof_path = os.path.join(diag_dir, "profiler.txt")
-            with open(prof_path, "w") as f:
-                stats = pstats.Stats(profiler, stream=f).sort_stats('cumtime')
-                stats.print_stats(40)
-            print(f"[cProfile] Top 40 functions written to {prof_path}")
-        else:
-            stats = pstats.Stats(profiler).sort_stats('cumtime')
-            stats.print_stats(40)
-    except Exception as e:
-        print(f"[cProfile] Failed to write diagnostics: {e}")
-        stats = pstats.Stats(profiler).sort_stats('cumtime')
-        stats.print_stats(40)
+    run_dir = profiler.runcall(main)
+    if run_dir and os.path.isdir(run_dir):
+        diag_dir = os.path.join(run_dir, "diagnostics")
+        os.makedirs(diag_dir, exist_ok=True)
+        prof_path = os.path.join(diag_dir, "profiler.txt")
+        with open(prof_path, "w") as f:
+            pstats.Stats(profiler, stream=f).sort_stats("cumtime").print_stats(40)
+        logger.info(f"[cProfile] Top 40 functions written to {prof_path}")
+    else:
+        pstats.Stats(profiler).sort_stats("cumtime").print_stats(40)
+    return run_dir
+
+
+if __name__ == "__main__":
+    if "--profile" in sys.argv[1:]:
+        main_profiled()
+    else:
+        main()

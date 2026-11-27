@@ -27,7 +27,7 @@ Public functions in this module are called by SpectralSolver (NumpyBackend):
 
 import numpy as np
 import scipy.fft
-from numba import njit, prange
+from numba import get_num_threads, njit, prange
 from scipy.ndimage import shift as scipy_shift
 
 from spectral_galerkin_heat.core.laser import super_gaussian_flux as _super_gaussian_flux
@@ -44,7 +44,9 @@ __all__ = [
     "compute_latent_heat_source_grid",
     "reconstruct_bottom_temperature",
     "reconstruct_surface_temperature",
+    "relax_modes",
     "update_modes_etd1",
+    "update_modes_etd1_source",
 ]
 
 # ======================================
@@ -89,6 +91,51 @@ def update_modes_etd1(aK, KK, Cp_broadcast, B_scaled, a_temp_out):
     nz = aK.shape[0]
     for p in prange(nz):
         a_temp_out[p, :, :] = aK[p, :, :] + KK[p, :, :] * Cp_broadcast[p, 0, 0] * B_scaled
+
+@njit(parallel=True, fastmath=True, cache=True)
+def update_modes_etd1_source(aK, KK, Cp_broadcast, B_scaled, Q_modes, a_temp_out):
+    """ETD1 update with a volume source: a_out = aK + KK * (Cp * B_scaled + Q_modes)."""
+    nz, ny, nx = aK.shape
+    for p in prange(nz):
+        cp_p = Cp_broadcast[p, 0, 0]
+        for i in range(ny):
+            for j in range(nx):
+                a_temp_out[p, i, j] = aK[p, i, j] + KK[p, i, j] * (cp_p * B_scaled[i, j] + Q_modes[p, i, j])
+
+
+@njit(parallel=True, fastmath=True, cache=True)
+def _relax_modes(a_trial, KK, C_modes, has_c, a_iter, omega):
+    nz, ny, nx = a_iter.shape
+    s_res = 0.0
+    s_old = 0.0
+    for p in prange(nz):
+        r_p = 0.0
+        o_p = 0.0
+        for i in range(ny):
+            for j in range(nx):
+                old = a_iter[p, i, j]
+                r = a_trial[p, i, j] - old
+                if has_c:
+                    r += KK[p, i, j] * C_modes[p, i, j]
+                r_p += np.float64(r) * np.float64(r)
+                o_p += np.float64(old) * np.float64(old)
+                a_iter[p, i, j] = old + omega * r
+        s_res += r_p
+        s_old += o_p
+    return s_res, s_old
+
+
+def relax_modes(a_trial, KK, C_modes, a_iter, omega, scratch):
+    """Relaxed Picard update in place, ``a_iter += omega (a_trial + KK C_modes - a_iter)``.
+
+    ``C_modes`` may be None. Returns the sums of squares of the residual and of
+    ``a_iter`` before the update. ``scratch`` is unused on the CPU.
+    """
+    has_c = C_modes is not None
+    s_res, s_old = _relax_modes(a_trial, KK, C_modes if has_c else a_trial, has_c,
+                                a_iter, a_iter.dtype.type(omega))
+    return s_res, s_old
+
 
 @njit(parallel=True, fastmath=True, cache=True)
 def add_source_term_modes(a_temp, KK, Q_modes):
@@ -378,7 +425,7 @@ def DCT_II(q):
     array's float dtype (float32 or float64).
     """
     arr = np.ascontiguousarray(q)
-    return scipy.fft.dctn(arr, type=2, norm='ortho', axes=tuple(range(arr.ndim)), workers=-1)
+    return scipy.fft.dctn(arr, type=2, norm='ortho', axes=tuple(range(arr.ndim)), workers=get_num_threads())
 
 def IDCT_II(a):
     """Apply Discrete Cosine Transform Type II (Ortho).
@@ -386,7 +433,7 @@ def IDCT_II(a):
     Precision-transparent: runs in the input array's float dtype.
     """
     arr = np.ascontiguousarray(a)
-    return scipy.fft.dctn(arr, type=3, norm='ortho', axes=tuple(range(arr.ndim)), workers=-1)
+    return scipy.fft.dctn(arr, type=3, norm='ortho', axes=tuple(range(arr.ndim)), workers=get_num_threads())
 
 
 def shift_flux(field: np.ndarray, shift: tuple, geom) -> np.ndarray:

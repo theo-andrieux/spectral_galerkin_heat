@@ -2,7 +2,7 @@
 
 Simulations are configured with YAML files that map the physical properties and runtime
 settings. Example configurations live under `simulations/examples/`; this page mirrors
-{download}`02_single_track.yaml <../simulations/examples/02_single_track.yaml>`. For a
+{download}`02_single_scan.yaml <../simulations/examples/02_single_scan.yaml>`. For a
 walkthrough of the examples, see {doc}`examples`.
 
 :::{note}
@@ -27,6 +27,8 @@ Declares the run and solver behavior.
 * **duration**: Total physical simulation time (`s`).
 * **dt**: Time step size (`s`).
 * **update_interval**: Steps between ETA prints to the terminal (`int`).
+* **threads** (optional): Number of CPU threads (`int`, or `"all"` for every core), shared by the
+  Numba kernels, the DCTs and BLAS. Default `1`.
 
 The following keys control the non-linear (temperature-dependent property) solve. They are only
 needed when the material properties are given as temperature-dependent branches (see `material`
@@ -68,9 +70,10 @@ Optional; controls where the latent-heat source is evaluated (relevant only when
 
 Box-mode keys:
 
-* **refinement**: Fine cells per coarse cell, per axis (`int`, default `4`). The fine spacing is
+* **refinement**: Fine cells per coarse cell, per axis (`int`, default `1`). The fine spacing is
   the coarse spacing divided by this factor.
-* **box_size**: Extent `[Lx, Ly, Lz]` of the box in metres (default `[0.9e-3, 0.9e-3, 0.04e-3]`).
+* **box_size**: Extent `[Lx, Ly, Lz]` of the box in metres, as a plain list or the `{value, unit}`
+  mapping form (default `[0.9e-3, 0.9e-3, 0.04e-3]`).
   The x/y extents form a window that tracks the laser; the z extent is the near-surface depth.
 
 In box mode the box must enclose the melt pool: the latent-heat source is projected onto the

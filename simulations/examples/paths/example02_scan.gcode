@@ -1,4 +1,4 @@
-; Example 02 track (small box, constant 316L + latent heat).
+; Example 02 scan (small box, constant 316L + latent heat).
 ; Small domain so a fine z-grid resolves the ~few-micron mushy zone cheaply.
 ; v_scan = 0.4 m/s (F24000 mm/min); y at the domain centre (Ly/2 = 0.2 mm);
 ; P = 120 W (S120), absorptivity applied by the solver.

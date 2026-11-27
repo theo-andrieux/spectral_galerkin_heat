@@ -151,7 +151,7 @@ def initialize_run_logging(config: dict[str, Any], yaml_path: str, out_dir: str)
         f"Python Version   : {python_version}",
         f"OS               : {os_info}",
         f"CPU Model        : {cpu_model}",
-        f"Cores Allocated  : {cpu_count} available",
+        f"CPU Threads      : {sim.get('threads', 1)} of {cpu_count}",
         f"GPU Model        : {gpu_model}",
         "",
         "[FILES SAVED IN OUTPUT DIR]",
@@ -395,7 +395,7 @@ class StandaloneHeatRunner:
         logger.info(f"Starting time loop: 0 -> {t_end:.4e} s (dt={dt:.4e}, n_steps={n_steps})")
         self._init_telemetry()
 
-        for step in range(n_steps + 1):
+        for step in range(n_steps):
             t = step * dt  # exact, no accumulation
 
             # A. Periodic output (IOManager decides internally)
@@ -409,7 +409,9 @@ class StandaloneHeatRunner:
             # D. Telemetry (internally rate-limited)
             self._log_progress(t + dt, step + 1, step_elapsed, metrics)
 
-        # End-of-simulation outputs; state is at exactly t_end.
+        # Periodic output due at t_end, then end-of-simulation outputs; state is
+        # at exactly t_end after n_steps steps.
+        self.io_manager.process_step(t_end, n_steps, state, laser_path)
         self.io_manager.process_end(t_end, n_steps, state, laser_path)
 
         # 4. Finalize

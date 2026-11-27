@@ -6,6 +6,8 @@ non-linear regime, and a published part-scale scan-strategy study. The first two
 checks against a reference. The third is not: there the non-linear physics changes the published
 result, which is the point of the comparison.
 
+Every result on this page can be rerun from `simulations/paper/`; {doc}`paper` explains how.
+
 ## Against analytical solutions (linear regime)
 
 Two moving-source solutions serve as references. Rosenthal's is closed-form but concentrates the
@@ -153,7 +155,7 @@ The solver is applied to the multi-island scan-strategy study of Ramani et al. (
 powder-bed fusion of 316L stainless steel, using the same process parameters and scan strategies.
 That study used a linear finite-difference model. The SG solver first reproduces it directly for
 validation, then the four strategies are repeated with evaporation and latent heat active and the
-grid refined to $N_x = N_y = 1200$, $N_z = 8$; thermophysical properties are kept constant, since a
+grid refined to $N_x = N_y = 1200$, $N_z = 4$; thermophysical properties are kept constant, since a
 single-pass simulation in the same regime found temperature-dependence to play a negligible role once
 evaporation and latent heat are active.
 

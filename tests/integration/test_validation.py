@@ -1,7 +1,7 @@
 """Physics validation: linear analytical + non-linear sanity.
 
 The linear tests anchor *correctness* against the closed-form Eagar-Tsai moving
-heat-source solution (``tests/integration/eagar_tsai.py``, method-of-images corrected for the
+heat-source solution (``spectral_galerkin_heat.analytical``, method-of-images corrected for the
 solver's six insulated walls); the non-linear test guards against regressions
 with loose physical bounds (no analytical reference once latent heat /
 evaporation are active).
@@ -86,7 +86,7 @@ def _run_linear_field(ctx):
 @pytest.mark.slow
 def test_linear_matches_eagar_tsai(constant_velocity_laser):
     """Linear solver vs the method-of-images Eagar-Tsai field."""
-    from tests.integration.eagar_tsai import eagar_tsai_field
+    from spectral_galerkin_heat.analytical import eagar_tsai_field
 
     x = np.linspace(0.0, _LX, _NX + 1)
     y = np.linspace(0.0, _LY, _NY + 1)
@@ -95,14 +95,15 @@ def test_linear_matches_eagar_tsai(constant_velocity_laser):
     laser = constant_velocity_laser(_X_START, _LY / 2, _V, 0.0, _P)
     T = _run_linear_field(_context(_config(), laser))
 
-    # The ETD1 field equals the field of a source whose entire trajectory 
-    # is shifted back by dt/2 if we change to ETD2 or RK4, reconsider this 
-    # time-centering correction then.
+    # The solver holds the laser at its start-of-step position over each ETD1
+    # step; passing dt makes the reference source do the same. Revisit if the
+    # time scheme changes (ETD2, RK4).
     dt = _T_TOTAL / _N_STEPS
     T_ref = eagar_tsai_field(
+        x, y, z,
         rho=_RHO, k=_K, Cp=_CP, T0=_T0, A=_A, P=_P, r_b=_R_B,
-        Lx=_LX, Ly=_LY, Lz=_LZ, nx=_NX, ny=_NY, nz=_NZ,
-        x_end=_X_END - 0.5 * _V * dt, y_laser=_LY / 2, v=_V, t_total=_T_TOTAL,
+        Lx=_LX, Ly=_LY, Lz=_LZ,
+        x_laser=_X_END, y_laser=_LY / 2, v=_V, t_total=_T_TOTAL, dt=dt,
         images=True,
     )
 

@@ -17,6 +17,9 @@ def build_solver(context) -> HeatSolver:
     Backends are imported lazily to keep CuPy/Numba off the import path until
     needed.
     """
+    from spectral_galerkin_heat.core.threads import configure_threads
+    configure_threads(getattr(getattr(context, "num", None), "threads", 1))
+
     match context.backend:
         case "cpu":
             from spectral_galerkin_heat.backends import NumpyBackend

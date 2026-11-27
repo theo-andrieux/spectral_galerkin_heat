@@ -57,17 +57,17 @@ material:
   k:
     solid: "9.248 + 0.01571 * T"
     liquid: "12.41 + 0.003279 * T"
-    reference: 24.5075              # ½(min k + max k) over [T0, T_boil]
+    reference: 24.6858
     unit: "W/(m.K)"
   rho:
     solid: "8084.2 - 0.42086 * T - 3.8942e-5 * T**2"
     liquid: "7432.7 + 0.039338 * T - 1.8007e-4 * T**2"
-    reference: 6896.2365           # ½(min rho + max rho) over [T0, T_boil]
+    reference: 6896.2365
     unit: "kg/m^3"
   Cp:
     solid: "458.98 + 0.1328 * T"
     liquid: "769.86"                # constant branch (a bare-number string)
-    reference: 633.8752            # ½(min Cp + max Cp) over [T0, T_boil]
+    reference: 633.8752
     unit: "J/(kg.K)"
   L_f:
     value: 2.677e5
@@ -107,7 +107,7 @@ laser:
     unit: "W"
   path:
     type: "gcode"
-    file: "example03_track.gcode"   # v_scan = 0.15 m/s, starts mid-domain (x = 0.3 mm).
+    file: "example03_scan.gcode"   # v_scan = 0.15 m/s, starts mid-domain (x = 0.3 mm).
 
 io:
   run_tag: "nonlinear_tdep"

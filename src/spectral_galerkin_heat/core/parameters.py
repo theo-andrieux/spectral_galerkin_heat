@@ -101,8 +101,8 @@ def _get_value(raw_val: Any, target_unit: str | None = None) -> float:
 def _get_vector(raw_val: Any, target_unit: str | None = None) -> list:
     """Extract a list of numbers from a config field, with unit conversion.
 
-    Vector fields (``domain.size``, ``domain.mesh``) carry the sequence under
-    the ``value`` key of a ``{value, unit}`` mapping, so the mapping must be
+    Vector fields (``domain.size``, ``domain.mesh``, ``fine_mesh.box_size``)
+    carry the sequence under the ``value`` key of a ``{value, unit}`` mapping, so the mapping must be
     unwrapped before the elements are converted; a bare sequence is also
     accepted. Returns floats -- integer fields are cast by the caller.
     """
@@ -123,6 +123,20 @@ def _get_vector(raw_val: Any, target_unit: str | None = None) -> list:
 
 # Floating-point precisions the solver supports, keyed by config name.
 _SUPPORTED_DTYPES = {"float32": np.float32, "float64": np.float64}
+
+
+def _parse_threads(value):
+    """``simulation.threads``: a positive integer, or ``"all"`` (-> None, every core)."""
+    if isinstance(value, str) and value.strip().lower() == "all":
+        return None
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"simulation.threads must be a positive integer or 'all', got {value!r}.") from None
+    if n < 1:
+        raise ValueError(f"simulation.threads must be >= 1 or 'all', got {n}.")
+    return n
 
 
 def _resolve_dtype(name):
@@ -190,6 +204,11 @@ class NumParams:
     picard_omega : float, optional
         Under-relaxation (mixing) factor for the Picard loop. ``None`` (default)
         uses the solver default. Set via ``simulation.picard_omega``.
+    threads : int or None, optional
+        Number of CPU threads for the Numba kernels, the DCTs and BLAS, by
+        default 1. ``None`` uses every core. Set via
+        ``simulation.threads`` (an integer, or ``"all"`` for every core); see
+        :mod:`spectral_galerkin_heat.core.threads`.
     """
     dt: float
     nx: int
@@ -206,6 +225,7 @@ class NumParams:
     max_picard_iter: int | None = None
     picard_tol: float | None = None
     picard_omega: float | None = None
+    threads: int | None = 1
     dtype: Any = np.float32
 
 @dataclass
@@ -399,13 +419,13 @@ class FineMeshParams:
     ----------
     refinement : int
         Per-axis cell-refinement factor of the fine mesh relative to the global
-        spectral grid (fine spacing ``= geom.d / refinement``), by default 4.
+        spectral grid (fine spacing ``= geom.d / refinement``), by default 1.
     box_size : Vec3
         Extent of the refined, laser-following sub-box in metres ``(Lx_box, Ly_box, Lz_box)``: the
         x/y extents span the laser footprint, the z extent is the near-surface
         depth. By default ``Vec3(0.9e-3, 0.9e-3, 0.04e-3)``.
     """
-    refinement: int = 4
+    refinement: int = 1
     # Vec3 is frozen and slotted, so one shared default instance is safe.
     box_size: Vec3 = Vec3(0.9e-3, 0.9e-3, 0.04e-3)  # noqa: RUF009
 
@@ -417,7 +437,7 @@ class FineMeshParams:
 _SECTION_KEYS = {
     "simulation": {
         "name", "backend", "dtype", "dt", "duration", "update_interval",
-        "max_picard_iter", "picard_tol", "picard_omega",
+        "max_picard_iter", "picard_tol", "picard_omega", "threads",
     },
     "domain": {"size", "mesh"},
     "material": {
@@ -563,6 +583,7 @@ class SimulationContext:
                         if sim_cfg.get('picard_tol') is not None else None),
             picard_omega=(float(sim_cfg['picard_omega'])
                           if sim_cfg.get('picard_omega') is not None else None),
+            threads=_parse_threads(sim_cfg.get('threads', 1)),
             dtype=real_t,
         )
 
@@ -576,11 +597,10 @@ class SimulationContext:
             fine_params = None
         else:
             default_box = (0.9e-3, 0.9e-3, 0.04e-3)
-            box_val = fine_cfg.get('box_size', default_box)
-            box_size_m = [float(_get_value(v, "m")) for v in box_val]
+            box_size_m = _get_vector(fine_cfg.get('box_size', default_box), "m")
             
             fine_params = FineMeshParams(
-                refinement=int(_get_value(fine_cfg.get('refinement', 4))),
+                refinement=int(_get_value(fine_cfg.get('refinement', 1))),
                 box_size=Vec3(box_size_m[0], box_size_m[1], box_size_m[2]),
             )
 

@@ -43,7 +43,9 @@ __all__ = [
     "compute_latent_heat_source_grid",
     "reconstruct_bottom_temperature",
     "reconstruct_surface_temperature",
+    "relax_modes",
     "update_modes_etd1",
+    "update_modes_etd1_source",
 ]
 
 # ======================================
@@ -60,6 +62,11 @@ _ek_update_modes_etd1 = cp.ElementwiseKernel(
     "F aK, F KK, F Cp, F B", "F out",
     "out = aK + (KK * Cp) * B",
     "fhs_update_modes_etd1")
+
+_ek_update_modes_etd1_source = cp.ElementwiseKernel(
+    "F aK, F KK, F Cp, F B, F Q", "F out",
+    "out = aK + KK * (Cp * B + Q)",
+    "fhs_update_modes_etd1_source")
 
 _ek_add_source_term_modes = cp.ElementwiseKernel(
     "F KK, F Q", "F a_temp",
@@ -129,6 +136,26 @@ def _launch_config(shape, tpb=None):
 def update_modes_etd1(aK, KK, Cp_broadcast, B_scaled, a_temp_out):
     """Wrapper for ETD1 kernel."""
     _ek_update_modes_etd1(aK, KK, Cp_broadcast, B_scaled, a_temp_out)
+
+
+def update_modes_etd1_source(aK, KK, Cp_broadcast, B_scaled, Q_modes, a_temp_out):
+    """ETD1 update with a volume source: a_out = aK + KK * (Cp * B_scaled + Q_modes)."""
+    _ek_update_modes_etd1_source(aK, KK, Cp_broadcast, B_scaled, Q_modes, a_temp_out)
+
+
+def relax_modes(a_trial, KK, C_modes, a_iter, omega, scratch):
+    """Relaxed Picard update in place, ``a_iter += omega (a_trial + KK C_modes - a_iter)``.
+
+    ``C_modes`` may be None. Returns the sums of squares of the residual and of
+    ``a_iter`` before the update, with a single host sync.
+    """
+    cp.subtract(a_trial, a_iter, out=scratch)
+    if C_modes is not None:
+        _ek_add_source_term_modes(KK, C_modes, scratch)
+    sums = cp.asnumpy(cp.stack([cp.vdot(scratch, scratch), cp.vdot(a_iter, a_iter)]))
+    cp.multiply(scratch, a_iter.dtype.type(omega), out=scratch)
+    a_iter += scratch
+    return float(sums[0]), float(sums[1])
 
 
 def add_source_term_modes(a_temp, KK, Q_modes):

@@ -1,4 +1,4 @@
-; FE-reference matching track (Theo_cuboid_FE_temp_dep.py)
+; FE-reference matching scan (Theo_cuboid_FE_temp_dep.py)
 ; Start: X=0, Y=0.5 mm (domain centre of Ly=1.0 mm)
 ; v_scan = 0.15 m/s = 150 mm/s = 9000 mm/min
 ; Laser stays on for the whole run; at t=0.012 s the spot is at X=1.8 mm.

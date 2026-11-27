@@ -1,0 +1,91 @@
+# Paper Fig. 14: SmartScan case study (Ramani et al., 2022), nonlinear.
+#
+# Depending on the version of the code, results may differ slightly. Runtimes
+# depend on the machine; the hardware used for each run is reported in the paper.
+#
+# Run (from the repository root):
+#   uv run python simulations/paper/run_smartscan.py simulations/paper/fig14_smartscan_nonlinear/config.yaml
+
+simulation:
+  name: "paper_fig14_smartscan_nonlinear"
+  backend: "gpu"
+  duration:
+    value: 20.833333333333332   # 100 islands x 25 lines x 5 mm / 0.6 m/s
+    unit: "s"
+  dt:
+    value: 8.333333333333333e-5  # 1/12000 s
+    unit: "s"
+  update_interval: 60
+  max_picard_iter: 50   
+  picard_omega: 0.1
+  picard_tol: 1.0e-4
+
+domain:
+  size:
+    value: [0.06, 0.06, 0.0002]
+    unit: "m"
+  mesh:
+    value: [1200, 1200, 4]
+    unit: ""
+
+fine_mesh:
+  refinement: 1           # no refinement
+  box_size: [0.9e-3, 0.9e-3, 0.2e-3] 
+
+material:
+  name: "316L (Ramani et al. 2022, constant)"
+  k:
+    value: 22.5
+    unit: "W/(m.K)"
+  rho:
+    value: 7960.0
+    unit: "kg/m^3"
+  Cp:
+    value: 501.88799109182276    # k / (rho * alpha)
+    unit: "J/(kg.K)"
+  T0:
+    value: 293.0
+    unit: "K"
+  h_conv_top:
+    value: 25.0
+    unit: "W/(m2.K)"
+  h_conv_bottom:
+    value: 25.0
+    unit: "W/(m2.K)"
+  L_f:
+    value: 2.677e5
+    unit: "J/kg"
+  T_solidus:
+    value: 1674.15
+    unit: "K"
+  T_liquidus:
+    value: 1697.15
+    unit: "K"
+  DeltaH_LV:
+    value: 7.416e6
+    unit: "J/kg"
+  R_v:
+    value: 150.774
+    unit: "J/(kg.K)"
+  Pa:
+    value: 101325.0
+    unit: "Pa"
+  T_boil:
+    value: 3090.0
+    unit: "K"
+
+laser:
+  radius:
+    value: 38.5e-6
+    unit: "m"
+  absorptivity: 0.37
+  power_nominal:
+    value: 200.0
+    unit: "W"
+  cell_integrated: true
+  path:
+    type: "gcode"
+    file: "set-by-run_smartscan.py"
+
+io:
+  run_tag: "paper_fig14_smartscan_nonlinear"

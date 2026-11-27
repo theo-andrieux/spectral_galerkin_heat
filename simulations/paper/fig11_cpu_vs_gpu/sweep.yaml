@@ -1,0 +1,14 @@
+# Paper Fig. 11: grids of the CPU/GPU runtime sweep.
+
+config: config.yaml
+backends: [gpu, cpu]
+grids:
+  - [16, 8, 8]
+  - [32, 16, 16]
+  - [64, 32, 32]
+  - [128, 64, 64]
+  - [256, 128, 128]
+  - [512, 256, 256]
+  - [768, 384, 384]
+  - [1024, 512, 512]
+out: out/paper_fig11_cpu_vs_gpu
