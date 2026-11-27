@@ -4,7 +4,7 @@
 # depend on the machine; the hardware used for each run is reported in the paper.
 #
 # Run (from the repository root):
-#   uv run python simulations/paper/sweep.py simulations/paper/fig10_sg_vs_fe_runtime/sweep.yaml
+#   uv run python simulations/paper/sweep.py simulations/paper/fig10_sg_runtime/sweep.yaml
 
 simulation:
   name: "paper_fig10_sg_runtime"

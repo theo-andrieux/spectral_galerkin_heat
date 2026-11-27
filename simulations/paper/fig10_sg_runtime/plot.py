@@ -1,7 +1,7 @@
 """Paper Fig. 10: (a) runtime vs DoF, (b) runtime vs self-convergence error.
 
 Run (from the repository root), after the sweep:
-    uv run python simulations/paper/fig10_sg_vs_fe_runtime/plot.py [SWEEP_OUT] [FIG_DIR]
+    uv run python simulations/paper/fig10_sg_runtime/plot.py [SWEEP_OUT] [FIG_DIR]
 
 SWEEP_OUT defaults to out/paper_fig10_sg_runtime, FIG_DIR to SWEEP_OUT/figures.
 Writes runtime_vs_dof.pdf and runtime_vs_error.pdf.
